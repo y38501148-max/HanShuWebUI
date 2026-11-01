@@ -112,7 +112,9 @@ export function AudiovisualWorkspace({
   const session = useProjectSession()
   const client = session.binding?.handle.client
   const projectBound = Boolean(session.binding)
-  const readOnly = !client?.writable
+  /** 新建 / 改名 / 删除要可写连接；正文草稿允许本机先改（与剧本源码编辑一致）。 */
+  const structureReadOnly = !client?.writable
+  const viewerOnly = client?.snapshot.role === 'viewer'
   const editorFontSize = useEditorFontSize()
   const [ui, setUi] = useState(loadUi)
   const [busy, setBusy] = useState(false)
@@ -185,17 +187,17 @@ export function AudiovisualWorkspace({
 
   const changeSource = useCallback(
     (id: string, content: string) => {
-      if (readOnly || structuralPendingRef.current) return
+      if (viewerOnly || structuralPendingRef.current) return
       const live = getProjectSession()
       const current = live.workspace.packages[0]?.scripts.find((script) => script.id === id)
-      if (!current || current.content === content) return
+      if (!current || current.detached || current.content === content) return
       setProjectSession({ workspace: replaceScript(live.workspace, id, { content }) })
     },
-    [readOnly],
+    [viewerOnly],
   )
 
   const createBossbarFile = useCallback(() => {
-    if (readOnly) return
+    if (structureReadOnly) return
     const type = findNewFileType('bossbar')
     if (!type) return
     const live = getProjectSession()
@@ -223,11 +225,11 @@ export function AudiovisualWorkspace({
       },
     })
     openFile(script.id)
-  }, [openFile, readOnly])
+  }, [openFile, structureReadOnly])
 
   const renameFile = useCallback(
     (id: string, base: string): string | null => {
-      if (readOnly) return '只读工程'
+      if (structureReadOnly) return '只读工程'
       const type = findNewFileType('bossbar')
       if (!type) return '缺少类型注册'
       const baseError = validateNewFileBase(type, base)
@@ -282,12 +284,12 @@ export function AudiovisualWorkspace({
         })
       return null
     },
-    [readOnly],
+    [structureReadOnly],
   )
 
   const deleteFile = useCallback(
     (id: string) => {
-      if (readOnly) return
+      if (structureReadOnly) return
       const live = getProjectSession()
       const binding = live.binding
       const current = live.workspace.packages[0]?.scripts.find((script) => script.id === id)
@@ -338,7 +340,7 @@ export function AudiovisualWorkspace({
           })
       })
     },
-    [closePages, readOnly],
+    [closePages, structureReadOnly],
   )
 
   const saveDraft = useCallback(async () => {
@@ -417,7 +419,7 @@ export function AudiovisualWorkspace({
         <AudiovisualExplorer
           files={files}
           activeId={ui.activeKey}
-          readOnly={readOnly || !projectBound}
+          readOnly={structureReadOnly || !projectBound}
           onOpen={openFile}
           onCreate={createBossbarFile}
           onRename={renameFile}
@@ -493,14 +495,15 @@ export function AudiovisualWorkspace({
                     )}
                     <div className="av-json-editor" aria-label=".bossbar JSON">
                       <Editor
+                        key={file.id}
                         height="100%"
                         language="json"
                         theme={HANSHU_THEME_ID}
                         value={file.content}
-                        path={`audiovisual-bossbar://${file.id}/${file.name}`}
+                        path={`audiovisual-bossbar://${file.id}`}
                         beforeMount={registerHanshuLanguage}
                         onChange={(value) => {
-                          if (!readOnly && !file.detached) changeSource(file.id, value ?? '')
+                          if (!viewerOnly && !file.detached) changeSource(file.id, value ?? '')
                         }}
                         options={{
                           fontSize: editorFontSize,
@@ -510,8 +513,7 @@ export function AudiovisualWorkspace({
                           automaticLayout: true,
                           scrollBeyondLastLine: false,
                           padding: { top: 8 },
-                          readOnly: readOnly || Boolean(file.detached),
-                          domReadOnly: readOnly || Boolean(file.detached),
+                          readOnly: viewerOnly || Boolean(file.detached),
                         }}
                       />
                     </div>
@@ -539,9 +541,11 @@ export function AudiovisualWorkspace({
               ? '需要工程目录'
               : busy
                 ? '正在保存…'
-                : readOnly
-                  ? '只读'
-                  : 'Ctrl+S 保存到工程目录'}
+                : viewerOnly
+                  ? '只读成员'
+                  : structureReadOnly
+                    ? '离线草稿 · 恢复连接后可保存'
+                    : 'Ctrl+S 保存到工程目录'}
           </span>
         }
         right={<span>视听效果 · BOSS血条</span>}

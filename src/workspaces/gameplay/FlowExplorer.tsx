@@ -407,6 +407,7 @@ export function FlowExplorer({
       | "flow"
       | "script"
       | "actor"
+      | "reputation"
       | "shop"
       | "kit"
       | "progress"

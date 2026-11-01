@@ -40,6 +40,7 @@ export const SOURCE_KIND_ORDER = [
   'gift',
   'items',
   'entities',
+  'bossbars',
 ] as const
 
 /**
@@ -62,6 +63,7 @@ export const FILE_PLANE: Record<string, FilePlane> = {
   '.actor': 'server',
   '.rep': 'server',
   '.shop': 'server',
+  '.bossbar': 'client',
 }
 
 /** 后缀默认平面；未列出则 `shared`（保守：两端都带上） */

@@ -38,6 +38,7 @@ import { createKit, stringifyKit } from "./workspaces/gameplay/kit";
 import { createActor, stringifyActor } from "./workspaces/gameplay/actor";
 import { createReputation, stringifyReputation } from "./workspaces/gameplay/reputation";
 import { createShop, stringifyShop } from "./workspaces/gameplay/shop";
+import { createBossbar, stringifyBossbar } from "./workspaces/audiovisual/bossbar";
 import {
   createNavigationPoint,
   stringifyNavigationPoint,
@@ -61,12 +62,13 @@ import { stringifyVoicePlan, type VoicePlan } from "./tts/plan";
 import type { ProviderPreset } from "./tts/providers";
 
 /** 下拉菜单里的分组。顺序即显示顺序（先"写剧本要用的"，再"要另开工作区编的"，最后"资料"） */
-export type NewFileGroupId = "source" | "gameplay" | "meta";
+export type NewFileGroupId = "source" | "gameplay" | "audiovisual" | "meta";
 
 export const NEW_FILE_GROUPS: readonly { id: NewFileGroupId; label: string }[] =
   [
     { id: "source", label: "源文件" },
     { id: "gameplay", label: "游戏性" },
+    { id: "audiovisual", label: "视听效果" },
     { id: "meta", label: "创作资料" },
   ];
 
@@ -92,6 +94,7 @@ export type NewFileTypeId =
   | "actor"
   | "rep"
   | "shop"
+  | "bossbar"
   | "md"
   | "tts"
   | "ttsservice";
@@ -387,6 +390,16 @@ export const NEW_FILE_TYPES: readonly NewFileType[] = [
     group: "gameplay",
     defaultBase: "新礼包",
     seed: (base) => stringifyKit(createKit(base.trim())),
+  },
+  {
+    id: "bossbar",
+    ext: ".bossbar",
+    label: "BOSS血条",
+    hint: "BOSS 血条样式（src/bossbars）；目前用 JSON 源码编辑",
+    icon: "bossbar",
+    group: "audiovisual",
+    defaultBase: "新血条",
+    seed: (base) => stringifyBossbar(createBossbar(base.trim())),
   },
   {
     id: "md",

@@ -193,6 +193,7 @@ assert.deepEqual(
     'gift',
     'items',
     'entities',
+    'bossbars',
     'meta',
   ],
   'WORKSPACE_GROUP_ORDER 必须覆盖全部源类型 + meta（资源树按它建桶）',

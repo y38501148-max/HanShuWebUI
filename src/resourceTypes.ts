@@ -12,6 +12,7 @@ export const RESOURCE_TYPES = [
   { id:'actor', ext:'.actor', directory:'src/actors', category:'actor' },
   { id:'rep', ext:'.rep', directory:'src/reputations', category:'reputation' },
   { id:'shop', ext:'.shop', directory:'src/shop', category:'shop' },
+  { id:'bossbar', ext:'.bossbar', directory:'src/bossbars', category:'bossbar' },
   { id:'md', ext:'.md', directory:'meta/docs', category:'meta' },
   { id:'tts', ext:'.tts', directory:'meta/voice', category:'meta' },
   { id:'ttsservice', ext:'.ttsservice', directory:'meta/voice/service', category:'meta' },
@@ -34,4 +35,12 @@ export const GAMEPLAY_CATEGORIES = {
 export type GameplayCategoryId = keyof typeof GAMEPLAY_CATEGORIES
 export function categoryExtensions(id:GameplayCategoryId):string[]{
   return GAMEPLAY_CATEGORIES[id].types.map(type=>RESOURCE_TYPES.find(def=>def.id===type)!.ext)
+}
+/** 视听效果工作区业务分类；与游戏性分类并列，不写入 GAMEPLAY_CATEGORIES。 */
+export const AUDIOVISUAL_CATEGORIES = {
+  bossbar:{name:'BOSS血条',types:['bossbar'],imports:['.bossbar']},
+} as const satisfies Record<string,{name:string;types:readonly ResourceTypeId[];imports:readonly string[]}>
+export type AudiovisualCategoryId = keyof typeof AUDIOVISUAL_CATEGORIES
+export function audiovisualCategoryExtensions(id:AudiovisualCategoryId):string[]{
+  return AUDIOVISUAL_CATEGORIES[id].types.map(type=>RESOURCE_TYPES.find(def=>def.id===type)!.ext)
 }

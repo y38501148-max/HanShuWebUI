@@ -36,6 +36,25 @@
   background: var(--border);
 }
 
+.panel-dock-band > .av-library {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  border: 0;
+}
+
+.panel-dock-main > .av-main {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+}
+
 .audiovisual-workspace .av-main {
   flex: 1;
   display: flex;
@@ -51,60 +70,115 @@
   min-height: 0;
 }
 
-.av-explorer {
+.av-library {
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
+  overflow: hidden;
   background: var(--av-panel);
   color: var(--text);
 }
 
-.av-explorer-head {
+.av-explorer-heading {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  flex-shrink: 0;
+  padding: 6px 8px;
   background: var(--bg-title);
   border-bottom: 1px solid var(--border);
+  user-select: none;
 }
 
-.av-explorer-category {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.av-explorer-heading.is-draggable {
+  cursor: grab;
+}
+
+.av-explorer-heading.is-draggable:active {
+  cursor: grabbing;
+}
+
+.av-explorer-heading strong {
   flex: 1;
   min-width: 0;
+  font-size: 0.95em;
   font-weight: 600;
 }
 
-.av-explorer-add,
+.av-explorer-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.av-explorer-tools button,
 .av-explorer-delete {
   border: 1px solid var(--border-soft);
   background: var(--av-panel-2);
   color: inherit;
-  width: 26px;
+  min-width: 26px;
   height: 26px;
-  padding: 0;
+  padding: 0 6px;
   cursor: pointer;
 }
 
-.av-explorer-add:hover:not(:disabled),
+.av-explorer-tools button:hover:not(:disabled),
 .av-explorer-delete:hover:not(:disabled) {
   background: var(--av-hover);
 }
 
-.av-explorer-add:disabled {
+.av-explorer-tools button:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.av-explorer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.av-category-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 8px 10px 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.av-category-row:hover {
+  background: var(--av-hover);
+}
+
+.av-twist {
+  width: 1em;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.av-category-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.av-category-count {
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.9em;
 }
 
 .av-explorer-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
-  overflow: auto;
-  flex: 1;
+  padding: 0 6px 8px 18px;
 }
 
 .av-explorer-empty {

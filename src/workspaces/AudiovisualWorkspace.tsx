@@ -413,7 +413,7 @@ export function AudiovisualWorkspace({
       defaultPlacement: 'left',
       defaultSize: 280,
       minSize: 180,
-      render: () => (
+      render: (dock) => (
         <AudiovisualExplorer
           files={files}
           activeId={ui.activeKey}
@@ -422,6 +422,9 @@ export function AudiovisualWorkspace({
           onCreate={createBossbarFile}
           onRename={renameFile}
           onDelete={deleteFile}
+          placement={dock.placement}
+          onTitlePointerDown={dock.onTitlePointerDown}
+          onRedock={dock.onRedock}
         />
       ),
     },

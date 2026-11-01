@@ -7,8 +7,8 @@ import type { SourceFile } from '../../../workspace'
 /**
  * `.bossbar` 专用编译器。
  *
- * 单文件自包含：完整 v2 文档（含唯一 Base64 PNG 图集）原样放进 **shared** 平面，
- * 服务端和客户端读同一份字节。不产出外部 PNG、资源清单或旁路图集文件。
+ * 完整 v2 文档（含唯一 Base64 PNG 图集）放进 client 平面。
+ * 服务端只发送变量，不加载模板。不产出外部 PNG 或资源清单。
  * `templateHash` 由读取方对实际编译字节取 SHA-256，不写回文档。
  */
 
@@ -79,7 +79,7 @@ export const bossbarCompiler: FileCompiler = {
       {
         path: artifactPathOf(file),
         bytes,
-        plane: 'shared',
+        plane: 'client',
         packageName: ctx.index.package.name,
         sourcePath: file.name,
       },

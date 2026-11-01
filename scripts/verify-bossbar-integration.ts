@@ -6,7 +6,7 @@ import { collectProjectChanges, type BoundProject } from '../src/project/project
 import { createBossbar, stringifyBossbar } from '../src/workspaces/audiovisual/bossbar'
 import { exportPaks } from '../src/export/pack/exportPaks'
 
-const document = createBossbar('hanshu:integration')
+const document = { ...createBossbar('hanshu:integration'), priority: 42 }
 const source: SourceFile = {
   id: 'bossbar-integration', name: 'integration.bossbar',
   content: stringifyBossbar(document), updatedAt: 0,
@@ -43,14 +43,21 @@ const hashes: string[] = []
 for (const pack of exported.packs) {
   const zip = await JSZip.loadAsync(await pack.blob.arrayBuffer())
   const entry = zip.file('bossbars/integration.bossbar')
-  assert.ok(entry, pack.target + ' 含有 shared BossBar')
+  if (pack.target === 'server') {
+    assert.equal(entry, null, 'server 包不含客户端 BossBar 模板')
+    assert.ok(!Object.values(zip.files).some(file => !file.dir && file.name.endsWith('.bossbar')))
+    continue
+  }
+  assert.ok(entry, pack.target + ' 含有 client BossBar')
   const bytes = await entry.async('uint8array')
   assert.equal(new TextDecoder().decode(bytes), stringifyBossbar(document))
+  assert.equal(JSON.parse(new TextDecoder().decode(bytes)).priority, 42, '客户端产物保留根级优先级')
   hashes.push(createHash('sha256').update(bytes).digest('hex'))
   assert.ok(!Object.values(zip.files).some(file => !file.dir && /\.(png|jpe?g|webp)$/i.test(file.name)), '图集不生成外链图片')
 }
-assert.equal(new Set(hashes).size, 1, '三个实际 PAK 的 BossBar 字节与 SHA-256 相同')
-console.log('通过：client/server/combined 实际打包、解包，BossBar 字节与 hash 一致：' + hashes[0])
+assert.equal(hashes.length, 2)
+assert.equal(new Set(hashes).size, 1, 'client 与 combined 包的 BossBar 字节与 SHA-256 相同')
+console.log('通过：server 包无模板，client/combined 实际解包字节与 hash 一致：' + hashes[0])
 
 const other = createProject('Other package', [{ ...source, id: 'other', name: 'other.bossbar' }])
 await assert.rejects(exportPaks({ ...workspace, packages: [project, other] }), /模板 ID.*重复/)

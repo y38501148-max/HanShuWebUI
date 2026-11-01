@@ -32,7 +32,7 @@ import { DEMO_EMBER_GUARD } from '../src/workspaces/audiovisual/bossbar/spec/cas
 import { createAnimationState, evaluateBars } from '../src/workspaces/audiovisual/bossbar/render/animation'
 import { buildScene } from '../src/workspaces/audiovisual/bossbar/render/scene'
 import { resolveValues, estimateSnapshotBytes } from '../src/workspaces/audiovisual/bossbar/rules/values'
-import { formatLongCompact, formatLongNumber } from '../src/workspaces/audiovisual/bossbar/rules/numberFormat'
+import { formatRunValue } from '../src/workspaces/audiovisual/bossbar/rules/formatRun'
 import {
   addComponent,
   createComponent,
@@ -66,20 +66,18 @@ assert.equal(
 const fixtures = JSON.parse(fixturesOnDisk) as Record<string, any>
 console.log('通过：schema 与跨语言夹具和实现一致')
 
-for (const entry of fixtures.numberFormat as { kind: string, number: string, compact: string, percent: string, expect: Record<string, string> }[]) {
-  assert.equal(entry.number, entry.expect.number, 'number 格式：' + entry.kind + ' ' + String(entry.value))
-  assert.equal(entry.compact, entry.expect.compact, 'compact 格式：' + entry.kind + ' ' + String(entry.value))
-  assert.equal(entry.percent, entry.expect.percent, 'percent 格式：' + entry.kind + ' ' + String(entry.value))
+for (const entry of fixtures.textValues as { text: string, expect: string }[]) {
+  assert.equal(entry.text, entry.expect, '变量原值文本')
 }
 for (const entry of fixtures.frames as { mode: string, samples: { timeMs: number, index: number, expect: number }[] }[]) {
   for (const sample of entry.samples) {
     assert.equal(sample.index, sample.expect, '取帧 ' + entry.mode + ' @' + sample.timeMs + 'ms')
   }
 }
-for (const entry of fixtures.ratio as { kind: string, ratio: number, expect: number }[]) {
-  assert.ok(Math.abs(entry.ratio - entry.expect) < 1e-12, '比例 ' + entry.kind)
+for (const entry of fixtures.progress as { result: number, expect: number }[]) {
+  assert.equal(entry.result, entry.expect, 'progress 夹紧')
 }
-console.log('通过：数值格式、取帧与比例表（' + fixtures.numberFormat.length + ' 组格式）')
+console.log('通过：变量原值文本、UV 取帧与 progress 夹紧')
 
 // ---------------------------------------------------------------- 2. 解析与规范化
 
@@ -106,6 +104,7 @@ assert.equal(v1.status, 'v1', 'v1 只允许显式升级')
 const upgraded = upgradeBossbarV1({ format: 'hanshu.bossbar', version: 1, id: 'legacy' })
 assert.equal(upgraded.id, 'legacy')
 assert.equal(upgraded.version, 2, '升级后版本为 2')
+assert.equal(upgraded.priority, 0, '升级默认优先级为0')
 assert.equal(upgraded.components.length, 1, '升级后只有一个显示区域')
 assert.equal(upgraded.components[0].type, 'display_region', '升级补的是显示区域')
 assert.deepEqual(upgraded.components[0].box, { x: 0, y: 0, width: 768, height: 72 })
@@ -120,6 +119,7 @@ console.log('通过：v1 需显式升级，未知版本只给诊断')
 const base = createBossbar('t')
 const regionOnly = base.components[0]
 assert.equal(regionOnly.type, 'display_region', '新建文档自带显示区域')
+assert.equal(base.priority, 0, '新建默认优先级为0')
 
 const touching = addComponent(base, {
   id: 'edge',
@@ -183,70 +183,55 @@ assert.equal(uvResult.ok, false, 'UV 越界必须拒绝')
 if (!uvResult.ok) assert.ok(uvResult.diagnostics.some((entry) => entry.code === 'uv_out_of_bounds'))
 console.log('通过：单张 Base64 PNG、UV 边界与 Base64 规范化')
 
-// ---------------------------------------------------------------- 5. long 精度
+// ---------------------------------------------------------------- 5. 文本变量与 long 精度
 
-assert.equal(formatLongNumber(BigInt('9223372036854775807')), '9223372036854775807')
-assert.equal(formatLongNumber(BigInt('9007199254740993')), '9007199254740993', '2^53+1 不能丢位')
-assert.equal(formatLongCompact(BigInt('9223372036854775807'), 0), '9223372037B')
-assert.equal(formatLongCompact(BigInt('-9223372036854775808'), 0), '-9223372037B')
+const maximumLong = { type: 'long' as const, value: '9223372036854775807' }
+assert.equal(formatRunValue(maximumLong), '9223372036854775807')
+assert.equal(formatRunValue({ type: 'long', value: '9007199254740993' }), '9007199254740993', '2^53+1 不能丢位')
+assert.equal(formatRunValue({ type: 'long', value: '-9223372036854775808' }), '-9223372036854775808')
+assert.equal(formatRunValue({ type: 'double', value: 0.35 }), '0.35', 'double 原样转为文本')
+assert.equal(formatRunValue({ type: 'bool', value: true }), 'true')
+assert.equal(formatRunValue({ type: 'string', value: '420K（35%）' }), '420K（35%）', '服务端已格式化的字符串不变')
 
-const longDoc = addComponent(setTexture(createBossbar('t'), BOSSBAR_SAMPLE_TEXTURE), {
-  id: 'shield_bar',
-  type: 'bar',
-  box: { x: 0, y: 0, width: 100, height: 10 },
-  visible: true,
-  opacity: 1,
-  range: { value: { var: 'shield' }, min: { type: 'long', value: '0' }, max: { type: 'long', value: '9223372036854775807' } },
-  direction: 'left-to-right',
-  fill: { kind: 'solid', color: '#FF0000FF' },
-  smoothMs: 0,
-})
-const withVariable: BossbarDocument = {
-  ...longDoc,
-  variables: { shield: { type: 'long', key: 'shield', default: '9223372036854775807' } },
+const longDoc: BossbarDocument = {
+  ...createBossbar('long-text'),
+  variables: { counter: { type: 'long', default: '0' } },
 }
-const longParsed = parseBossbarDocument(stringifyBossbar(withVariable))
-assert.equal(longParsed.ok, true, 'long 极值必须可解析')
-
-const longValues = resolveValues(withVariable, { shield: { type: 'long', value: '9223372036854775807' } })
-const longScene = buildScene({
-  document: withVariable,
-  values: longValues.values,
-  timeMs: 0,
-  texture: { width: 4, height: 2 },
+longDoc.components.push({
+  id: 'counter_text', type: 'text', box: { x: 0, y: 0, width: 500, height: 20 },
+  visible: true, opacity: 1, runs: [{ text: '计数：' }, { var: 'counter' }],
+  fontSize: 16, color: '#FFFFFFFF', align: 'left', verticalAlign: 'middle', shadow: false,
 })
-assert.equal(longScene.commands.length, 1, '满血时只有填充一条命令')
-
-const ratio = (await import('../src/workspaces/audiovisual/bossbar/rules/range')).resolveRange(
-  withVariable.components[1].type === 'bar' ? withVariable.components[1].range : ({} as never),
-  withVariable.variables,
-  longValues.values,
-)
-assert.equal(ratio.type, 'long', '长整型范围')
-assert.equal(ratio.ratio, 1, 'long 极值比例必须精确为 1')
-console.log('通过：long 精度、极值与精确比例')
+assert.equal(parseBossbarDocument(stringifyBossbar(longDoc)).ok, true)
+const longScene = buildScene({
+  document: longDoc, values: resolveValues(longDoc, { counter: maximumLong }).values,
+  timeMs: 0, texture: { width: 1, height: 1 },
+})
+assert.equal(longScene.commands[0].kind, 'text')
+assert.equal(longScene.commands[0].kind === 'text' && longScene.commands[0].text, '计数：9223372036854775807')
+console.log('通过：字面量和变量直接拼接，long 全精度，服务端格式文本原样显示')
 
 // ---------------------------------------------------------------- 6. 值与动画
 
 const demoValues = resolveValues(demo, {
-  health: { type: 'double', value: 420000 },
-  maxHealth: { type: 'double', value: 1200000 },
+  healthProgress: { type: 'double', value: 0.35 },
+  healthText: { type: 'string', value: '420K（35%）' },
   bossName: { type: 'string', value: '赤焰守卫' },
   targetName: { type: 'string', value: '史蒂夫' },
   enraged: { type: 'bool', value: false },
-  shield: { type: 'long', value: '12' },
-  maxShield: { type: 'long', value: '100' },
+  shieldProgress: { type: 'double', value: 0.12 },
+  counter: { type: 'long', value: '9007199254740993' },
 })
-assert.equal(demoValues.values.health.value, 420000, 'health 值透传')
+assert.equal(demoValues.values.healthProgress.value, 0.35, 'progress 值透传')
 assert.equal(demoValues.issues.length, 0, '完整输入没有诊断')
 
 const brokenValues = resolveValues(demo, {
-  health: { type: 'long', value: '5' },
+  healthProgress: { type: 'long', value: '5' },
   bossName: { type: 'string', value: 'x'.repeat(65) },
   enraged: { type: 'double', value: 1 },
 })
-assert.equal(brokenValues.values.health.type, 'double', '类型不符回落到声明默认值')
-assert.equal(brokenValues.values.health.value, 0)
+assert.equal(brokenValues.values.healthProgress.type, 'double', '类型不符回落到声明默认值')
+assert.equal(brokenValues.values.healthProgress.value, 0)
 assert.equal(brokenValues.values.bossName.value, '首领', '超长字符串回落到默认值')
 assert.equal(brokenValues.values.enraged.value, false, 'bool 类型不符回落默认值')
 assert.ok(brokenValues.issues.length >= 3, '每个非法值都有诊断')
@@ -254,11 +239,11 @@ assert.ok(brokenValues.issues.length >= 3, '每个非法值都有诊断')
 const initial = evaluateBars(null, demo, demoValues.values, 0)
 assert.equal(initial.view.health_fill.value, 0.35, '首次出现直接取真实值')
 // 目标变化的瞬间显示值仍等于旧值(过渡从当前比例起算)，之后才开始增长
-const healedStart = evaluateBars(initial.state, demo, { ...demoValues.values, health: { type: 'double', value: 1200000 } }, 1000)
+const healedStart = evaluateBars(initial.state, demo, { ...demoValues.values, healthProgress: { type: 'double', value: 1 } }, 1000)
 assert.equal(healedStart.view.health_fill.value, 0.35, '目标变化的瞬间仍从当前显示比例起算')
-const healed = evaluateBars(healedStart.state, demo, { ...demoValues.values, health: { type: 'double', value: 1200000 } }, 1060)
+const healed = evaluateBars(healedStart.state, demo, { ...demoValues.values, healthProgress: { type: 'double', value: 1 } }, 1060)
 assert.ok(healed.view.health_fill.value > 0.35 && healed.view.health_fill.value < 1, '回血时主条在 smoothMs 内线性增长')
-const settled = evaluateBars(healed.state, demo, { ...demoValues.values, health: { type: 'double', value: 1200000 } }, 1300)
+const settled = evaluateBars(healed.state, demo, { ...demoValues.values, healthProgress: { type: 'double', value: 1 } }, 1300)
 assert.equal(settled.view.health_fill.value, 1, 'smoothMs 之后到达真实值')
 assert.equal(settled.view.health_fill.trail, 1, '回血时尾条立即对齐')
 
@@ -322,11 +307,7 @@ const imageDocument: BossbarDocument = {
     {
       id: 'quarter_bar', type: 'bar', box: { x: 10, y: 20, width: 40, height: 40 },
       visible: true, opacity: 1,
-      range: {
-        value: { type: 'double', value: 25 },
-        min: { type: 'double', value: 0 },
-        max: { type: 'double', value: 100 },
-      },
+      progress: 0.25,
       direction: 'left-to-right', smoothMs: 0,
       fill: { kind: 'texture', uv: { x: 0, y: 0, width: 4, height: 2 }, fit: 'stretch' },
     },
@@ -389,13 +370,13 @@ console.log('通过：贴图缩放、平移、九宫格与部分填充裁剪保�
 // ---------------------------------------------------------------- 8. 编辑操作
 
 let edited = structuredClone(demo)
-const renamed = renameVariable(edited, 'health', 'hp')
+const renamed = renameVariable(edited, 'healthProgress', 'hp')
 assert.equal(renamed.ok, true)
 if (renamed.ok) {
   edited = renamed.document
   const bar = edited.components.find((component) => component.id === 'health_fill')
   assert.ok(bar && bar.type === 'bar')
-  assert.deepEqual(bar.range.value, { var: 'hp' })
+  assert.deepEqual(bar.progress, { var: 'hp' })
 }
 const blockedDelete = removeVariable(edited, 'hp')
 assert.equal(blockedDelete.ok, false, '仍被引用的变量不能直接删除')
@@ -444,10 +425,10 @@ const artifacts = await bossbarCompiler.compile(
 assert.deepEqual(reports, [], '合法文档不该报错')
 assert.equal(artifacts.length, 1, '单文件只产出一个产物')
 assert.equal(artifacts[0].path, 'bossbars/ember_guard.bossbar', '产物路径')
-assert.equal(artifacts[0].plane, 'shared', '服务端与客户端读同一份 shared 文档')
+assert.equal(artifacts[0].plane, 'client', '模板只在客户端运行')
 assert.equal(artifacts[0].bytes, stringifyBossbar(demo), '产物字节等于规范序列化')
 assert.ok(!artifacts.some((artifact) => artifact.path.startsWith('assets/')), '不得产出外部图片资产')
-console.log('通过：编译器产出唯一 shared 文档、无外部图片')
+console.log('通过：编译器产出唯一 client 文档、无外部图片')
 
 // ---------------------------------------------------------------- 10. 资源登记与预算
 

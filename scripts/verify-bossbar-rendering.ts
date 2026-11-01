@@ -57,7 +57,7 @@ document.components = [document.components[0],
   { id: 'background', type: 'background', box: first, visible: true, opacity: 0.5, paint: { kind: 'solid', color: '#FF000080' } },
   {
     id: 'bar', type: 'bar', box: first, visible: true, opacity: 0.5,
-    range: { value: { type: 'double', value: 50 }, min: { type: 'double', value: 0 }, max: { type: 'double', value: 100 } },
+    progress: 0.5,
     direction: 'left-to-right', smoothMs: 0, fill: { kind: 'solid', color: '#FF000080' },
   },
   {

@@ -3,7 +3,7 @@ import {
   type BossbarDocument,
   type BossbarValueMap,
 } from '../protocol'
-import { resolveRange } from '../rules/range'
+import { resolveProgress } from '../rules/range'
 import type { BossbarBarView } from './scene'
 
 /**
@@ -76,7 +76,7 @@ export function evaluateBars(
 
   for (const component of document.components) {
     if (isDisplayRegion(component) || component.type !== 'bar') continue
-    const ratio = resolveRange(component.range, document.variables, values).ratio
+    const ratio = resolveProgress(component.progress, document.variables, values)
     const prev = previous?.bars[component.id]
     let animation: BossbarBarAnimation
     if (!prev) {

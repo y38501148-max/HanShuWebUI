@@ -10,9 +10,7 @@ import {
   BOSSBAR_LIMITS,
   BOSSBAR_LONG_PATTERN,
   BOSSBAR_NAME_PATTERN,
-  BOSSBAR_RATIO_FORMATS,
   BOSSBAR_TEXT_ALIGNS,
-  BOSSBAR_TEXT_FORMATS,
   BOSSBAR_TEXT_VERTICAL_ALIGNS,
   BOSSBAR_VARIABLE_TYPES,
   BOSSBAR_VERSION,
@@ -26,7 +24,7 @@ import {
  * 因此默认值字段也列为 required —— 两端不能再各写一套默认值。
  *
  * schema 只覆盖结构；显示区域唯一性、AABB 包含、UV 越界、PNG 结构、
- * long 范围与范围三元组类型一致等由 parse.ts 的语义校验负责。
+ * long 默认值范围与进度变量类型等由 parse.ts 的语义校验负责。
  */
 
 const namePattern = BOSSBAR_NAME_PATTERN.source
@@ -148,20 +146,6 @@ const barPaint = {
   ],
 } as const
 
-const longOperand = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['type', 'value'],
-  properties: { type: { const: 'long' }, value: { type: 'string', pattern: longPattern } },
-} as const
-
-const doubleOperand = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['type', 'value'],
-  properties: { type: { const: 'double' }, value: { type: 'number' } },
-} as const
-
 const variableOperand = {
   type: 'object',
   additionalProperties: false,
@@ -169,18 +153,7 @@ const variableOperand = {
   properties: { var: { type: 'string', pattern: namePattern } },
 } as const
 
-const numericOperand = { oneOf: [longOperand, doubleOperand, variableOperand] } as const
-
-const range = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['value', 'min', 'max'],
-  properties: {
-    value: numericOperand,
-    min: numericOperand,
-    max: numericOperand,
-  },
-} as const
+const progress = { oneOf: [{ type: 'number' }, variableOperand] } as const
 
 const visibility = {
   oneOf: [
@@ -230,12 +203,12 @@ const backgroundComponent = {
 const barComponent = {
   type: 'object',
   additionalProperties: false,
-  required: ['id', 'type', 'box', 'visible', 'opacity', 'range', 'direction', 'fill', 'smoothMs'],
+  required: ['id', 'type', 'box', 'visible', 'opacity', 'progress', 'direction', 'fill', 'smoothMs'],
   properties: {
     id: { type: 'string', pattern: namePattern },
     type: { const: BOSSBAR_COMPONENT_TYPES[2] },
     ...paintableCommon,
-    range,
+    progress,
     direction: { enum: [...BOSSBAR_BAR_DIRECTIONS] },
     fill: barPaint,
     trail: {
@@ -279,31 +252,9 @@ const literalRun = {
 const variableRun = {
   type: 'object',
   additionalProperties: false,
-  required: ['var', 'format', 'digits'],
+  required: ['var'],
   properties: {
     var: { type: 'string', pattern: namePattern },
-    format: { enum: [...BOSSBAR_TEXT_FORMATS] },
-    digits: {
-      type: 'integer',
-      minimum: BOSSBAR_LIMITS.textDigits.min,
-      maximum: BOSSBAR_LIMITS.textDigits.max,
-    },
-    color: colorProperty,
-  },
-} as const
-
-const ratioRun = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['ratio', 'format', 'digits'],
-  properties: {
-    ratio: range,
-    format: { enum: [...BOSSBAR_RATIO_FORMATS] },
-    digits: {
-      type: 'integer',
-      minimum: BOSSBAR_LIMITS.textDigits.min,
-      maximum: BOSSBAR_LIMITS.textDigits.max,
-    },
     color: colorProperty,
   },
 } as const
@@ -331,7 +282,7 @@ const textComponent = {
     runs: {
       type: 'array',
       maxItems: 64,
-      items: { oneOf: [literalRun, variableRun, ratioRun] },
+      items: { oneOf: [literalRun, variableRun] },
     },
     fontSize: {
       type: 'number',
@@ -345,15 +296,12 @@ const textComponent = {
   },
 } as const
 
-const variableKey = { type: 'string', pattern: namePattern } as const
-
 const longVariable = {
   type: 'object',
   additionalProperties: false,
-  required: ['type', 'key', 'default'],
+  required: ['type', 'default'],
   properties: {
     type: { const: BOSSBAR_VARIABLE_TYPES[0] },
-    key: variableKey,
     default: { type: 'string', pattern: longPattern },
   },
 } as const
@@ -361,10 +309,9 @@ const longVariable = {
 const doubleVariable = {
   type: 'object',
   additionalProperties: false,
-  required: ['type', 'key', 'default'],
+  required: ['type', 'default'],
   properties: {
     type: { const: BOSSBAR_VARIABLE_TYPES[1] },
-    key: variableKey,
     default: { type: 'number' },
   },
 } as const
@@ -372,10 +319,9 @@ const doubleVariable = {
 const boolVariable = {
   type: 'object',
   additionalProperties: false,
-  required: ['type', 'key', 'default'],
+  required: ['type', 'default'],
   properties: {
     type: { const: BOSSBAR_VARIABLE_TYPES[2] },
-    key: variableKey,
     default: { type: 'boolean' },
   },
 } as const
@@ -383,10 +329,9 @@ const boolVariable = {
 const stringVariable = {
   type: 'object',
   additionalProperties: false,
-  required: ['type', 'key', 'default', 'maxLength'],
+  required: ['type', 'default', 'maxLength'],
   properties: {
     type: { const: BOSSBAR_VARIABLE_TYPES[3] },
-    key: variableKey,
     default: { type: 'string', maxLength: BOSSBAR_LIMITS.stringMaxLength },
     maxLength: {
       type: 'integer',
@@ -405,10 +350,11 @@ export const BOSSBAR_V2_SCHEMA = {
     '唯一 display_region，全部组件的 box 位于显示区域内。',
   type: 'object',
   additionalProperties: false,
-  required: ['format', 'version', 'id', 'texture', 'layout', 'variables', 'components'],
+  required: ['format', 'version', 'id', 'priority', 'texture', 'layout', 'variables', 'components'],
   properties: {
     format: { const: BOSSBAR_FORMAT },
     version: { const: BOSSBAR_VERSION },
+    priority: { type: 'integer', minimum: BOSSBAR_LIMITS.priority.min, maximum: BOSSBAR_LIMITS.priority.max },
     id: {
       type: 'string',
       minLength: 1,
@@ -476,6 +422,6 @@ export const BOSSBAR_SCHEMA_DEFAULTS = {
   align: BOSSBAR_DEFAULTS.align,
   verticalAlign: BOSSBAR_DEFAULTS.verticalAlign,
   shadow: BOSSBAR_DEFAULTS.shadow,
-  digits: BOSSBAR_DEFAULTS.digits,
+  priority: BOSSBAR_DEFAULTS.priority,
   fits: [...BOSSBAR_FITS],
 } as const

@@ -560,7 +560,7 @@ export function BossbarCanvasStage({
   )
 
   return (
-    <div className="bb-stage" ref={wrapRef} data-space={spaceHeld ? 'pan' : undefined}>
+    <div className="bb-stage" role="region" aria-label="BossBar 编辑视口" ref={wrapRef} data-space={spaceHeld ? 'pan' : undefined}>
       <canvas ref={canvasRef} className="bb-stage-canvas" style={{ width: size.width, height: size.height }} />
       <div
         className="bb-stage-surface"

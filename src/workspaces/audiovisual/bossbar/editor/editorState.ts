@@ -33,9 +33,6 @@ export type BossbarEditorViewState = {
   /** 预览底图：工程内 assets/ 路径，仅本机参考 */
   referenceAsset: string | null
   referenceOpacity: number
-  previewOpen: boolean
-  previewGuiWidth: number
-  previewGuiHeight: number
   playbackSpeed: number
   inspectorTab: BossbarInspectorTab
 }
@@ -51,9 +48,6 @@ export const DEFAULT_EDITOR_VIEW: BossbarEditorViewState = {
   hidden: [],
   referenceAsset: null,
   referenceOpacity: 0.35,
-  previewOpen: true,
-  previewGuiWidth: 1280,
-  previewGuiHeight: 400,
   playbackSpeed: 1,
   inspectorTab: 'component',
 }
@@ -64,29 +58,30 @@ function storageKey(projectId: string, fileId: string): string {
   return STORAGE_PREFIX + projectId + '::' + fileId
 }
 
+function editorViewState(input: Partial<BossbarEditorViewState>): BossbarEditorViewState {
+  const finite = (value: unknown, fallback: number) => typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  return {
+    zoom: Math.max(0.1, finite(input.zoom, 1)),
+    panX: finite(input.panX, 0),
+    panY: finite(input.panY, 0),
+    grid: Math.max(1, finite(input.grid, 8)),
+    showGrid: typeof input.showGrid === 'boolean' ? input.showGrid : true,
+    showRulers: typeof input.showRulers === 'boolean' ? input.showRulers : true,
+    locked: Array.isArray(input.locked) ? input.locked.filter((id): id is string => typeof id === 'string') : [],
+    hidden: Array.isArray(input.hidden) ? input.hidden.filter((id): id is string => typeof id === 'string') : [],
+    referenceAsset: typeof input.referenceAsset === 'string' ? input.referenceAsset : null,
+    referenceOpacity: Math.max(0, Math.min(1, finite(input.referenceOpacity, 0.35))),
+    playbackSpeed: Math.max(0.1, Math.min(2, finite(input.playbackSpeed, 1))),
+    inspectorTab: input.inspectorTab === 'variables' || input.inspectorTab === 'atlas' ? input.inspectorTab : 'component',
+  }
+}
+
 export function loadEditorViewState(projectId: string, fileId: string): BossbarEditorViewState {
   try {
     const raw = localStorage.getItem(storageKey(projectId, fileId))
-    if (!raw) return { ...DEFAULT_EDITOR_VIEW }
-    const parsed = JSON.parse(raw) as Partial<BossbarEditorViewState>
-    return {
-      ...DEFAULT_EDITOR_VIEW,
-      ...parsed,
-      locked: Array.isArray(parsed.locked) ? parsed.locked.filter((id): id is string => typeof id === 'string') : [],
-      hidden: Array.isArray(parsed.hidden) ? parsed.hidden.filter((id): id is string => typeof id === 'string') : [],
-      zoom: typeof parsed.zoom === 'number' && parsed.zoom > 0 ? parsed.zoom : 1,
-      grid: typeof parsed.grid === 'number' && parsed.grid > 0 ? parsed.grid : 8,
-      referenceOpacity:
-        typeof parsed.referenceOpacity === 'number'
-          ? Math.max(0, Math.min(1, parsed.referenceOpacity))
-          : 0.35,
-      inspectorTab:
-        parsed.inspectorTab === 'variables' || parsed.inspectorTab === 'atlas'
-          ? parsed.inspectorTab
-          : 'component',
-    }
+    return raw ? editorViewState(JSON.parse(raw)) : editorViewState(DEFAULT_EDITOR_VIEW)
   } catch {
-    return { ...DEFAULT_EDITOR_VIEW }
+    return editorViewState(DEFAULT_EDITOR_VIEW)
   }
 }
 
@@ -96,7 +91,7 @@ export function saveEditorViewState(
   state: BossbarEditorViewState,
 ): void {
   try {
-    localStorage.setItem(storageKey(projectId, fileId), JSON.stringify(state))
+    localStorage.setItem(storageKey(projectId, fileId), JSON.stringify(editorViewState(state)))
   } catch {
     /* 无痕模式只保留内存 */
   }
@@ -219,84 +214,31 @@ export function simulateVariable(
   return next
 }
 
-function numericMagnitude(variable: BossbarVariable): bigint | number | null {
-  if (variable.type === 'long') {
-    const parsed = parseLong(variable.default)
-    return parsed
-  }
-  if (variable.type === 'double') return variable.default
-  return null
-}
-
-function scaledValue(variable: BossbarVariable, factor: number): BossbarValue {
-  const magnitude = numericMagnitude(variable) ?? 0
-  if (variable.type === 'long') {
-    const base = typeof magnitude === 'bigint' ? magnitude : BigInt(0)
-    return { type: 'long', value: (base * BigInt(Math.round(factor * 1000))) / BigInt(1000) + '' }
-  }
-  const base = typeof magnitude === 'number' ? magnitude : 0
-  return { type: 'double', value: base * factor }
-}
-
-/** 根据声明变量推导可点的场景按钮；没有数值变量时只给「默认值」 */
+/** 只调整实际绑定到进度条的 double 变量，其他服务端数据保持默认值。 */
 export function buildScenarios(document: BossbarDocument): BossbarScenario[] {
   const defaults = defaultsForVariables(document)
   const scenarios: BossbarScenario[] = [{ id: 'default', label: '默认值', values: { ...defaults } }]
-  const names = Object.keys(document.variables ?? {})
-  const numericNames = names.filter((name) => {
-    const type = document.variables[name].type
-    return type === 'long' || type === 'double'
+  const progressNames = [...new Set(document.components.flatMap((component) =>
+    component.type === 'bar' && typeof component.progress !== 'number' &&
+      document.variables[component.progress.var]?.type === 'double' ? [component.progress.var] : [],
+  ))]
+  const progressName = progressNames.find((name) => /health|hp/i.test(name)) ?? progressNames[0]
+  if (progressName) {
+    for (const [id, label, value] of [
+      ['full', '100%', 1],
+      ['injured', '35%', 0.35],
+      ['low', '8%', 0.08],
+      ['empty', '0%', 0],
+      ['overheal', '超过 1', 1.4],
+      ['negative', '低于 0', -0.2],
+    ] as const) scenarios.push({ id, label, values: { ...defaults, [progressName]: { type: 'double', value } } })
+  }
+  const boolName = Object.keys(document.variables).find((name) => document.variables[name].type === 'bool')
+  if (boolName) scenarios.push({
+    id: 'toggle-' + boolName,
+    label: '切换 ' + boolName,
+    values: { ...defaults, [boolName]: { type: 'bool', value: defaults[boolName]?.value !== true } },
   })
-  if (!numericNames.length) return scenarios
-
-  const healthName =
-    numericNames.find((name) => /^(health|hp)$/i.test(name)) ?? numericNames[0]
-  const maxName =
-    numericNames.find((name) => /^max/i.test(name) && name !== healthName) ??
-    numericNames.find((name) => name !== healthName) ??
-    null
-  const healthVariable = document.variables[healthName]
-
-  if (maxName) {
-    const maxVariable = document.variables[maxName]
-    scenarios.push(
-      { id: 'full', label: '满血', values: { ...defaults, [healthName]: defaultValueOf(maxVariable) } },
-      { id: 'injured', label: '受伤 35%', values: { ...defaults, [healthName]: scaledValue(maxVariable, 0.35) } },
-      { id: 'low', label: '残血 8%', values: { ...defaults, [healthName]: scaledValue(maxVariable, 0.08) } },
-      {
-        id: 'empty',
-        label: '空血',
-        values: {
-          ...defaults,
-          [healthName]:
-            healthVariable.type === 'long' ? { type: 'long', value: '0' } : { type: 'double', value: 0 },
-        },
-      },
-      { id: 'overheal', label: '超过上限', values: { ...defaults, [healthName]: scaledValue(maxVariable, 1.4) } },
-    )
-  } else {
-    scenarios.push(
-      { id: 'full', label: '满值', values: { ...defaults, [healthName]: defaultValueOf(healthVariable) } },
-      { id: 'half', label: '一半', values: { ...defaults, [healthName]: scaledValue(healthVariable, 0.5) } },
-      {
-        id: 'empty',
-        label: '零值',
-        values: {
-          ...defaults,
-          [healthName]: healthVariable.type === 'long' ? { type: 'long', value: '0' } : { type: 'double', value: 0 },
-        },
-      },
-    )
-  }
-
-  const boolName = names.find((name) => document.variables[name].type === 'bool')
-  if (boolName) {
-    scenarios.push({
-      id: 'toggle-' + boolName,
-      label: '切换 ' + boolName,
-      values: { ...defaults, [boolName]: { type: 'bool', value: defaults[boolName]?.value !== true } },
-    })
-  }
   return scenarios
 }
 

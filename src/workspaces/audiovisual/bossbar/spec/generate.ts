@@ -10,15 +10,8 @@ import { BOSSBAR_V2_SCHEMA } from '../schema'
 import { buildScene } from '../render/scene'
 import { animationCycle, sampleAnimation } from '../rules/frames'
 import { barSegment, layoutScale, mapBoxToScreen, nineSliceSprites, placeRegion } from '../rules/layout'
-import {
-  formatCompact,
-  formatLongCompact,
-  formatLongNumber,
-  formatLongPercent,
-  formatNumber,
-  formatPercent,
-} from '../rules/numberFormat'
-import { computeDoubleRatio, computeLongRatio, resolveRange } from '../rules/range'
+import { formatRunValue } from '../rules/formatRun'
+import { clampProgress, resolveProgress } from '../rules/range'
 import { resolveValues, estimateSnapshotBytes } from '../rules/values'
 import { colorToArgbHex, parseColor } from '../rules/color'
 import { splitGraphemes, truncateToWidth } from '../rules/text'
@@ -38,8 +31,8 @@ import {
   LAYOUT_CASES,
   NINE_SLICE_CASES,
   NORMALIZE_CASES,
-  NUMBER_FORMAT_CASES,
-  RATIO_CASES,
+  TEXT_VALUE_CASES,
+  PROGRESS_CASES,
   TRUNCATE_CASES,
   UNSUPPORTED_VERSION,
   sequenceAnimation,
@@ -113,31 +106,6 @@ export function buildBossbarFixtures(): Record<string, unknown> {
     expect: parseExpectation(entry.input),
   }))
 
-  const numberFormat = NUMBER_FORMAT_CASES.map((entry) => {
-    if (entry.kind === 'long') {
-      const value = BigInt(entry.value as string)
-      return {
-        kind: entry.kind,
-        value: entry.value,
-        digits: entry.digits,
-        number: formatLongNumber(value),
-        compact: formatLongCompact(value, entry.digits),
-        percent: formatLongPercent(value),
-        expect: { number: entry.number, compact: entry.compact, percent: entry.percent },
-      }
-    }
-    const value = entry.value as number
-    return {
-      kind: entry.kind,
-      value,
-      digits: entry.digits,
-      number: formatNumber(value, entry.digits),
-      compact: formatCompact(value, entry.digits),
-      percent: formatPercent(value, entry.digits),
-      expect: { number: entry.number, compact: entry.compact, percent: entry.percent },
-    }
-  })
-
   const frames = FRAME_CASES.map((entry) => {
     const animation: BossbarAnimation = sequenceAnimation(entry.mode, entry.durations, entry.phaseMs)
     return {
@@ -153,32 +121,16 @@ export function buildBossbarFixtures(): Record<string, unknown> {
     }
   })
 
-  const ratio = RATIO_CASES.map((entry) => {
-    if (entry.kind === 'long') {
-      const value = BigInt(entry.value as string)
-      const min = BigInt(entry.min as string)
-      const max = BigInt(entry.max as string)
-      return {
-        kind: entry.kind,
-        value: entry.value,
-        min: entry.min,
-        max: entry.max,
-        ratio: round(computeLongRatio(value, min, max)),
-        expect: round(entry.ratio),
-      }
-    }
-    const value = entry.value as number
-    const min = entry.min as number
-    const max = entry.max as number
-    return {
-      kind: entry.kind,
-      value,
-      min,
-      max,
-      ratio: round(computeDoubleRatio(value, min, max)),
-      expect: round(entry.ratio),
-    }
-  })
+  const progress = PROGRESS_CASES.map((entry) => ({
+    input: entry.input,
+    result: clampProgress(entry.input),
+    expect: entry.expect,
+  }))
+  const textValues = TEXT_VALUE_CASES.map((entry) => ({
+    value: entry.value,
+    text: formatRunValue(entry.value),
+    expect: entry.expect,
+  }))
 
   const nineSlice = NINE_SLICE_CASES.map((entry) => ({
     name: entry.name,
@@ -273,9 +225,9 @@ export function buildBossbarFixtures(): Record<string, unknown> {
   const longScene = buildScene({ document: demo, values: longExtreme, timeMs: 250, texture: demoTexture })
 
   const shieldBar = demo.components.find((component) => component.id === 'shield_fill')
-  const shieldRange =
+  const shieldProgress =
     shieldBar && shieldBar.type === 'bar'
-      ? resolveRange(shieldBar.range, demo.variables, longExtreme)
+      ? resolveProgress(shieldBar.progress, demo.variables, longExtreme)
       : null
 
   return {
@@ -300,8 +252,7 @@ export function buildBossbarFixtures(): Record<string, unknown> {
       canonical: stringifyBossbar(demo),
       hints: validateBossbarSemantics(demo, demoTexture),
       snapshot: estimateSnapshotBytes(demo),
-      shieldRangeType: shieldRange?.type ?? null,
-      shieldRangeRatio: shieldRange ? round(shieldRange.ratio) : null,
+      shieldProgress,
       longSceneCommands: longScene.commands.length,
     },
     textureProbe: (() => {
@@ -309,9 +260,9 @@ export function buildBossbarFixtures(): Record<string, unknown> {
       const info = bytes ? pngInfo(bytes) : null
       return { source: 'BOSSBAR_SAMPLE_TEXTURE', bytes: bytes?.length ?? 0, info }
     })(),
-    numberFormat,
+    textValues,
     frames,
-    ratio,
+    progress,
     nineSlice,
     barSegment: barSegments,
     truncate,

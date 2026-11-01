@@ -12,7 +12,6 @@ import {
   defaultLayout,
   normalizeName,
   normalizeTemplateId,
-  operandType,
   parseLong,
   type BossbarAnimation,
   type BossbarBarComponent,
@@ -23,7 +22,6 @@ import {
   type BossbarDocumentV1,
   type BossbarLayout,
   type BossbarPaint,
-  type BossbarRange,
   type BossbarTextRun,
   type BossbarUv,
   type BossbarVariable,
@@ -91,28 +89,6 @@ function normalizePaint(raw: unknown): unknown {
   return next
 }
 
-function normalizeRange(raw: unknown): unknown {
-  return raw
-}
-
-function normalizeRun(raw: unknown): unknown {
-  if (!isRecord(raw)) return raw
-  const next: Record<string, unknown> = { ...raw }
-  if ('text' in raw) return next
-  if ('var' in raw) {
-    fill(next, 'format', BOSSBAR_DEFAULTS.textFormat)
-    fill(next, 'digits', BOSSBAR_DEFAULTS.digits)
-    return next
-  }
-  if ('ratio' in raw) {
-    next.ratio = normalizeRange(raw.ratio)
-    fill(next, 'format', BOSSBAR_DEFAULTS.ratioFormat)
-    fill(next, 'digits', BOSSBAR_DEFAULTS.digits)
-    return next
-  }
-  return next
-}
-
 function normalizeComponent(raw: unknown): unknown {
   if (!isRecord(raw)) return raw
   const next: Record<string, unknown> = { ...raw }
@@ -124,7 +100,6 @@ function normalizeComponent(raw: unknown): unknown {
     return next
   }
   if (raw.type === 'bar') {
-    next.range = normalizeRange(raw.range)
     fill(next, 'direction', BOSSBAR_DEFAULTS.direction)
     next.fill = normalizePaint(raw.fill)
     if ('trail' in raw) {
@@ -142,7 +117,6 @@ function normalizeComponent(raw: unknown): unknown {
     return next
   }
   if (raw.type === 'text') {
-    next.runs = Array.isArray(raw.runs) ? raw.runs.map(normalizeRun) : raw.runs
     fill(next, 'fontSize', BOSSBAR_DEFAULTS.fontSize)
     fill(next, 'color', BOSSBAR_DEFAULTS.textColor)
     fill(next, 'align', BOSSBAR_DEFAULTS.align)
@@ -163,6 +137,7 @@ function normalizeVariable(raw: unknown): unknown {
 /** 补齐默认值（不校验）。未知字段与类型错误原样保留，交给 schema 报 */
 export function normalizeBossbarDocument(raw: Record<string, unknown>): unknown {
   const next: Record<string, unknown> = { ...raw }
+  fill(next, 'priority', BOSSBAR_DEFAULTS.priority)
   if (isRecord(raw.layout)) {
     const layout: Record<string, unknown> = { ...raw.layout }
     fill(layout, 'dock', BOSSBAR_DEFAULTS.dock)
@@ -188,6 +163,27 @@ function schemaDiagnostics(raw: Record<string, unknown>): BossbarDiagnostic[] {
   return validateAgainstSchema(raw, BOSSBAR_V2_SCHEMA).map((issue) =>
     bossbarDiagnostic(issue.code, issue.path, issue.message),
   )
+}
+
+function obsoleteFieldDiagnostics(raw: Record<string, unknown>): BossbarDiagnostic[] {
+  const diagnostics: BossbarDiagnostic[] = []
+  if (!Array.isArray(raw.components)) return diagnostics
+  raw.components.forEach((component, index) => {
+    if (!isRecord(component)) return
+    const base = 'components[' + index + ']'
+    if ('range' in component) {
+      diagnostics.push(bossbarDiagnostic('obsolete_field', base + '.range', 'range 已移除，请使用服务端提供的 progress（double 字面量或变量引用）'))
+    }
+    if (!Array.isArray(component.runs)) return
+    component.runs.forEach((run, runIndex) => {
+      if (!isRecord(run)) return
+      for (const field of ['ratio', 'format', 'digits']) {
+        if (field in run) diagnostics.push(bossbarDiagnostic('obsolete_field', base + '.runs[' + runIndex + '].' + field,
+          field + ' 已移除，文本片段只允许字面量 text 或变量 var；数值格式由服务端提供'))
+      }
+    })
+  })
+  return diagnostics
 }
 
 // ------------------------------------------------------------------ 语义校验
@@ -346,57 +342,6 @@ export function validateBossbarSemantics(
     })
   }
 
-  const numberVariable = (name: string): 'long' | 'double' | null => {
-    const variable = variables[name]
-    if (!variable) return null
-    return variable.type === 'long' || variable.type === 'double' ? variable.type : null
-  }
-
-  const checkRange = (range: BossbarRange | undefined, path: string) => {
-    if (!range) return
-    const types = (['value', 'min', 'max'] as const).map((field) => {
-      const operand = range[field]
-      const type = operandType(operand, variables)
-      return { field, operand, type }
-    })
-    for (const entry of types) {
-      if (!('var' in entry.operand) && entry.operand.type === 'long' && parseLong(entry.operand.value) === null) {
-        diagnostics.push(bossbarDiagnostic('long', path + '.' + entry.field + '.value', 'long 常量必须是 int64 范围内的十进制字符串'))
-      }
-      if (entry.type === null) {
-        if ('var' in entry.operand) {
-          diagnostics.push(
-            bossbarDiagnostic(
-              'unknown_reference',
-              path + '.' + entry.field + '.var',
-              '引用了未声明的变量 ' + entry.operand.var,
-            ),
-          )
-        }
-        continue
-      }
-      if (entry.type !== 'long' && entry.type !== 'double') {
-        diagnostics.push(
-          bossbarDiagnostic(
-            'variable_type',
-            path + '.' + entry.field + '.var',
-            '数值范围只能引用 long/double 变量，' + ('var' in entry.operand ? entry.operand.var : '') + ' 是 ' + entry.type,
-          ),
-        )
-      }
-    }
-    const known = types.map((entry) => entry.type).filter((type): type is 'long' | 'double' => type === 'long' || type === 'double')
-    if (known.length && new Set(known).size > 1) {
-      diagnostics.push(
-        bossbarDiagnostic(
-          'range_type',
-          path,
-          'value/min/max 必须同属 long 或 double，不能混用（' + [...new Set(known)].join(' / ') + '）',
-        ),
-      )
-    }
-  }
-
   components.forEach((component, index) => {
     const base = 'components[' + index + ']'
     if (!component || typeof component !== 'object') return
@@ -423,7 +368,7 @@ export function validateBossbarSemantics(
     if (component.type === 'display_region') return
 
     if (isRecord(component.visible) && typeof component.visible.var === 'string') {
-      const variable = variables[component.visible.var]
+      const variable = Object.hasOwn(variables, component.visible.var) ? variables[component.visible.var] : undefined
       if (!variable) {
         diagnostics.push(
           bossbarDiagnostic('unknown_reference', base + '.visible.var', '引用了未声明的变量 ' + component.visible.var),
@@ -440,7 +385,14 @@ export function validateBossbarSemantics(
       return
     }
     if (component.type === 'bar') {
-      checkRange(component.range, base + '.range')
+      if (typeof component.progress === 'object') {
+        const variable = Object.hasOwn(variables, component.progress.var) ? variables[component.progress.var] : undefined
+        if (!variable) {
+          diagnostics.push(bossbarDiagnostic('unknown_reference', base + '.progress.var', '引用了未声明的变量 ' + component.progress.var))
+        } else if (variable.type !== 'double') {
+          diagnostics.push(bossbarDiagnostic('variable_type', base + '.progress.var', '进度只能引用 double 变量，' + component.progress.var + ' 是 ' + variable.type))
+        }
+      }
       checkPaint(component.fill, base + '.fill', true)
       if (component.trail) checkPaint(component.trail.paint, base + '.trail.paint', true)
       return
@@ -448,25 +400,12 @@ export function validateBossbarSemantics(
     component.runs.forEach((run: BossbarTextRun, runIndex: number) => {
       const runPath = base + '.runs[' + runIndex + ']'
       if ('var' in run) {
-        const variable = variables[run.var]
+        const variable = Object.hasOwn(variables, run.var) ? variables[run.var] : undefined
         if (!variable) {
           diagnostics.push(bossbarDiagnostic('unknown_reference', runPath + '.var', '引用了未声明的变量 ' + run.var))
           return
         }
-        if (run.format === 'string') {
-          if (variable.type !== 'string' && variable.type !== 'bool') {
-            diagnostics.push(
-              bossbarDiagnostic('variable_type', runPath + '.format', 'string 格式只接受 string/bool 变量，' + run.var + ' 是 ' + variable.type),
-            )
-          }
-        } else if (variable.type !== 'long' && variable.type !== 'double') {
-          diagnostics.push(
-            bossbarDiagnostic('variable_type', runPath + '.format', run.format + ' 格式需要 long/double 变量，' + run.var + ' 是 ' + variable.type),
-          )
-        }
-        return
       }
-      if ('ratio' in run) checkRange(run.ratio, runPath + '.ratio')
     })
   })
 
@@ -475,9 +414,6 @@ export function validateBossbarSemantics(
     if (!BOSSBAR_NAME_PATTERN.test(name)) {
       diagnostics.push(bossbarDiagnostic('name', path, '变量名不合法'))
       continue
-    }
-    if (!BOSSBAR_NAME_PATTERN.test(variable.key)) {
-      diagnostics.push(bossbarDiagnostic('name', path + '.key', 'Map 键不合法：' + variable.key))
     }
     if (variable.type === 'long') {
       const parsed = parseLong(variable.default)
@@ -497,7 +433,6 @@ export function validateBossbarSemantics(
         )
       }
     }
-    void numberVariable
   }
 
   const snapshot = estimateSnapshotBytes(document)
@@ -552,6 +487,8 @@ export function parseBossbarDocument(source: string): BossbarParseResult {
   }
 
   const normalized = normalizeBossbarDocument(raw)
+  const obsolete = obsoleteFieldDiagnostics(raw)
+  if (obsolete.length) return { ok: false, diagnostics: obsolete }
   const structural = schemaDiagnostics(normalized as Record<string, unknown>)
   if (structural.some((entry) => entry.severity === 'error')) {
     return { ok: false, diagnostics: structural }
@@ -683,30 +620,9 @@ function orderedPaint(paint: BossbarPaint): Record<string, unknown> {
   }
 }
 
-function orderedRange(range: BossbarRange): Record<string, unknown> {
-  const operand = (value: BossbarRange['value']): Record<string, unknown> =>
-    'var' in value ? { var: value.var } : { type: value.type, value: value.value }
-  return { value: operand(range.value), min: operand(range.min), max: operand(range.max) }
-}
-
 function orderedRun(run: BossbarTextRun): Record<string, unknown> {
-  if ('text' in run) {
-    return { text: run.text, ...(run.color ? { color: run.color } : {}) }
-  }
-  if ('var' in run) {
-    return {
-      var: run.var,
-      format: run.format,
-      digits: run.digits,
-      ...(run.color ? { color: run.color } : {}),
-    }
-  }
-  return {
-    ratio: orderedRange(run.ratio),
-    format: run.format,
-    digits: run.digits,
-    ...(run.color ? { color: run.color } : {}),
-  }
+  const content = 'text' in run ? { text: run.text } : { var: run.var }
+  return { ...content, ...(run.color ? { color: run.color } : {}) }
 }
 
 function orderedComponent(component: BossbarComponent): Record<string, unknown> {
@@ -733,7 +649,7 @@ function orderedComponent(component: BossbarComponent): Record<string, unknown> 
     const bar = component as BossbarBarComponent
     return {
       ...common,
-      range: orderedRange(bar.range),
+      progress: typeof bar.progress === 'number' ? bar.progress : { var: bar.progress.var },
       direction: bar.direction,
       fill: orderedPaint(bar.fill),
       ...(bar.trail
@@ -761,9 +677,9 @@ function orderedComponent(component: BossbarComponent): Record<string, unknown> 
 
 function orderedVariable(variable: BossbarVariable): Record<string, unknown> {
   if (variable.type === 'string') {
-    return { type: 'string', key: variable.key, default: variable.default, maxLength: variable.maxLength }
+    return { type: 'string', default: variable.default, maxLength: variable.maxLength }
   }
-  return { type: variable.type, key: variable.key, default: variable.default }
+  return { type: variable.type, default: variable.default }
 }
 
 /** 重建为固定字段顺序的规范文档：变量按名字排序，保证字节稳定（hash 依赖它） */
@@ -782,6 +698,7 @@ export function toCanonicalDocument(document: BossbarDocument): BossbarDocument 
     format: BOSSBAR_FORMAT,
     version: BOSSBAR_VERSION,
     id: document.id,
+    priority: document.priority ?? BOSSBAR_DEFAULTS.priority,
     texture: document.texture,
     layout,
     variables: variables as Record<string, BossbarVariable>,
@@ -801,6 +718,7 @@ export function createBossbar(id = ''): BossbarDocument {
     format: BOSSBAR_FORMAT,
     version: BOSSBAR_VERSION,
     id: normalizeTemplateId(trimmed) ?? trimmed,
+    priority: BOSSBAR_DEFAULTS.priority,
     texture: BOSSBAR_DEFAULT_TEXTURE,
     layout: defaultLayout(),
     variables: {},
@@ -816,7 +734,7 @@ export function createBossbar(id = ''): BossbarDocument {
 
 /** v1 → v2：保留 id，补默认显示区域与透明 1×1 PNG；只在用户显式点「升级」时使用 */
 export function upgradeBossbarV1(document: BossbarDocumentV1): BossbarDocument {
-  return createBossbar(document.id)
+  return { ...createBossbar(document.id), id: document.id }
 }
 
 export { defaultValueOf, normalizeName }

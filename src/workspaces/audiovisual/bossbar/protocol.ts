@@ -2,7 +2,8 @@
  * BossBar v2 协议：纯数据模型、限制与默认值。
  *
  * 本轮约定（见 src/help/docs/bossbar-design.md）：
- * - 变量只能来自 `blackboard.bossbar`（Java Map 风格的容器），类型为 long/double/bool/string；
+ * - 变量来自服务端数据包，类型为 long/double/bool/string；
+ * - 条只接收 double 进度，文本只接收原值，不在客户端计算范围或格式化数字；
  * - 每份文档必须且只能内嵌一张 Base64 PNG 图集，组件用 UV 指定区域，动画只切换 UV；
  * - 编辑画布无限，输出由唯一的 `display_region` 组件（AABB）决定；
  * - JSON 里的 long 一律用十进制字符串，禁止先过 Number。
@@ -17,8 +18,6 @@ export const BOSSBAR_V1_VERSION = 1 as const
 
 /** 变量名与组件 ID：单段标识符 */
 export const BOSSBAR_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,63}$/
-/** BossBar Map 的键，与变量名同形 */
-export const BOSSBAR_MAP_KEY_PATTERN = BOSSBAR_NAME_PATTERN
 /** 模板 ID：区分大小写，禁止首尾空白与控制字符，最长 128 字符 */
 export const BOSSBAR_ID_MAX_LENGTH = 128
 /** 颜色统一写作 #RRGGBBAA */
@@ -54,8 +53,6 @@ export const BOSSBAR_LIMITS = {
   displayRegion: { maxWidth: 4096, maxHeight: 1024 },
   components: 128,
   variables: 64,
-  /** 每 Actor 的 BossbarVariables 键数 */
-  variableKeys: 256,
   sequenceFrames: 256,
   frameDurationMs: { min: 16, max: 60000 },
   texture: {
@@ -77,14 +74,13 @@ export const BOSSBAR_LIMITS = {
   trailDelayMs: { min: 0, max: 60000 },
   trailDurationMs: { min: 0, max: 60000 },
   fontSize: { min: 4, max: 512 },
-  textDigits: { min: 0, max: 4 },
   stringMaxLength: 256,
   opacity: { min: 0, max: 1 },
   /** 顶部留白与行间距（游戏 GUI 逻辑像素） */
   rowTopMargin: 12,
   rowGap: 6,
   maxVisibleRows: 3,
-  priority: { min: -1000, max: 1000 },
+  priority: { min: -2147483648, max: 2147483647 },
   upsertsPerSecond: 10,
   replaceAllIntervalMs: 2000,
   batchTimeoutMs: 2000,
@@ -121,12 +117,6 @@ export type BossbarTextVerticalAlign = (typeof BOSSBAR_TEXT_VERTICAL_ALIGNS)[num
 export const BOSSBAR_VARIABLE_TYPES = ['long', 'double', 'bool', 'string'] as const
 export type BossbarVariableType = (typeof BOSSBAR_VARIABLE_TYPES)[number]
 
-export const BOSSBAR_TEXT_FORMATS = ['string', 'number', 'compact', 'percent'] as const
-export type BossbarTextFormat = (typeof BOSSBAR_TEXT_FORMATS)[number]
-/** 比例片段只接受 percent（默认）与 number（原样 0–1） */
-export const BOSSBAR_RATIO_FORMATS = ['percent', 'number'] as const
-export type BossbarRatioFormat = (typeof BOSSBAR_RATIO_FORMATS)[number]
-
 /** 默认值表：解析补齐、保存显式输出都由它驱动 */
 export const BOSSBAR_DEFAULTS = {
   dock: 'top-center' as BossbarDock,
@@ -148,9 +138,7 @@ export const BOSSBAR_DEFAULTS = {
   align: 'left' as BossbarTextAlign,
   verticalAlign: 'middle' as BossbarTextVerticalAlign,
   shadow: false,
-  digits: 0,
-  ratioFormat: 'percent' as BossbarRatioFormat,
-  textFormat: 'string' as BossbarTextFormat,
+  priority: 0,
   stringMaxLength: 256,
 } as const
 
@@ -178,24 +166,13 @@ export type BossbarValue =
 export type BossbarValueMap = Record<string, BossbarValue>
 
 export type BossbarVariable =
-  | { type: 'long'; key: string; default: string }
-  | { type: 'double'; key: string; default: number }
-  | { type: 'bool'; key: string; default: boolean }
-  | { type: 'string'; key: string; default: string; maxLength: number }
+  | { type: 'long'; default: string }
+  | { type: 'double'; default: number }
+  | { type: 'bool'; default: boolean }
+  | { type: 'string'; default: string; maxLength: number }
 
-export type BossbarLongOperand = { type: 'long'; value: string }
-export type BossbarDoubleOperand = { type: 'double'; value: number }
-export type BossbarVariableOperand = { var: string }
-export type BossbarNumericOperand =
-  | BossbarLongOperand
-  | BossbarDoubleOperand
-  | BossbarVariableOperand
-
-export type BossbarRange = {
-  value: BossbarNumericOperand
-  min: BossbarNumericOperand
-  max: BossbarNumericOperand
-}
+/** 服务端计算好的进度；引用仅可指向 double 变量，绘制时夹紧到 [0,1]。 */
+export type BossbarProgress = number | { var: string }
 
 export type BossbarSolidPaint = { kind: 'solid'; color: string }
 
@@ -246,7 +223,7 @@ export type BossbarTrail = {
 
 export type BossbarBarComponent = BossbarPaintableCommon & {
   type: 'bar'
-  range: BossbarRange
+  progress: BossbarProgress
   direction: BossbarBarDirection
   fill: BossbarPaint
   /** 缺省 = 关闭 */
@@ -259,18 +236,9 @@ export type BossbarLiteralRun = { text: string; color?: string }
 /** 变量片段 */
 export type BossbarVariableRun = {
   var: string
-  format: BossbarTextFormat
-  digits: number
   color?: string
 }
-/** 比例片段 */
-export type BossbarRatioRun = {
-  ratio: BossbarRange
-  format: BossbarRatioFormat
-  digits: number
-  color?: string
-}
-export type BossbarTextRun = BossbarLiteralRun | BossbarVariableRun | BossbarRatioRun
+export type BossbarTextRun = BossbarLiteralRun | BossbarVariableRun
 
 export type BossbarTextComponent = BossbarPaintableCommon & {
   type: 'text'
@@ -293,6 +261,8 @@ export type BossbarDocument = {
   format: typeof BOSSBAR_FORMAT
   version: typeof BOSSBAR_VERSION
   id: string
+  /** int32；较大值优先显示，缺省 0。 */
+  priority: number
   /** 纯 Base64 PNG（无前缀、无空白） */
   texture: string
   layout: BossbarLayout
@@ -369,7 +339,7 @@ export function canonicalLong(value: bigint): string {
 
 export function longValue(value: string | bigint): BossbarLongValue {
   const parsed = typeof value === 'bigint' ? value : parseLong(value)
-  if (parsed === null) throw new Error('非法 long：' + String(value))
+  if (parsed === null || parsed < BOSSBAR_LONG_MIN || parsed > BOSSBAR_LONG_MAX) throw new Error('非法 long：' + String(value))
   return { type: 'long', value: canonicalLong(parsed) }
 }
 
@@ -400,7 +370,7 @@ export function defaultValueOf(variable: BossbarVariable): BossbarValue {
   }
 }
 
-/** 类型化值是否符合声明类型与长度限制（容器先按全局上限拦，这里再按模板 maxLength 拦） */
+/** 类型化值是否符合声明类型与长度限制（同时检查模板 maxLength） */
 export function isValueCompatible(variable: BossbarVariable, value: BossbarValue): boolean {
   if (variable.type !== value.type) return false
   if (variable.type === 'long') return parseLong(value.value) !== null
@@ -408,18 +378,6 @@ export function isValueCompatible(variable: BossbarVariable, value: BossbarValue
   if (variable.type === 'bool') return typeof value.value === 'boolean'
   const text = (value as BossbarStringValue).value
   return typeof text === 'string' && [...text].length <= Math.min(variable.maxLength, BOSSBAR_LIMITS.stringMaxLength)
-}
-
-/** 范围里出现的数值类型：long / double；变量引用取声明的类型 */
-export function operandType(
-  operand: BossbarNumericOperand,
-  variables: Record<string, BossbarVariable>,
-): BossbarVariableType | null {
-  if ('var' in operand) {
-    const variable = variables[operand.var]
-    return variable ? variable.type : null
-  }
-  return operand.type
 }
 
 /** 去掉首尾空白校验模板 ID；不合法返回 null */
@@ -432,7 +390,7 @@ export function normalizeTemplateId(raw: unknown): string | null {
   return raw
 }
 
-/** 名称键（变量名、组件 ID、Map 键）规范化；不合法返回 null */
+/** 名称键（变量名、组件 ID）规范化；不合法返回 null */
 export function normalizeName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   return BOSSBAR_NAME_PATTERN.test(raw) ? raw : null

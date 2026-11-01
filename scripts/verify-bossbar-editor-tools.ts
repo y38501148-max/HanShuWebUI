@@ -8,8 +8,10 @@ import { BOSSBAR_DEFAULT_TEXTURE } from '../src/workspaces/audiovisual/bossbar/p
 import { sampleAnimation, stepAnimationFrame } from '../src/workspaces/audiovisual/bossbar/rules/frames'
 import { resolveValues } from '../src/workspaces/audiovisual/bossbar/rules/values'
 import { animationFramesAtFps, gridAnimationFrames } from '../src/workspaces/audiovisual/bossbar/editor/animationTools'
-import { parseVariableInput, simulateVariable, variableSimulationMode } from '../src/workspaces/audiovisual/bossbar/editor/editorState'
+import { buildScenarios, loadEditorViewState, parseVariableInput, saveEditorViewState, simulateVariable, variableSimulationMode } from '../src/workspaces/audiovisual/bossbar/editor/editorState'
 import { BossbarVariablesPanel } from '../src/workspaces/audiovisual/bossbar/editor/BossbarVariablesPanel'
+import { BossbarProgressEditor } from '../src/workspaces/audiovisual/bossbar/editor/BossbarProgressEditor'
+import { BossbarInspector } from '../src/workspaces/audiovisual/bossbar/editor/BossbarInspector'
 
 const animation: BossbarAnimation = {
   mode: 'loop', phaseMs: 0,
@@ -51,14 +53,14 @@ assert.equal(animationFramesAtFps(sixtyFrames, 100), null)
 assert.equal(animationFramesAtFps(sixtyFrames, 0), null)
 console.log('通过：逐行/逐列 UV 展开、图集边界与 FPS 整数毫秒分配')
 
-const double: BossbarVariable = { type: 'double', key: 'health', default: 10 }
+const double: BossbarVariable = { type: 'double', default: 10 }
 assert.deepEqual(parseVariableInput(double, '1e20'), { type: 'double', value: 1e20 })
 assert.deepEqual(parseVariableInput(double, '5e-324'), { type: 'double', value: Number.MIN_VALUE })
 assert.deepEqual(parseVariableInput(double, String(Number.MAX_VALUE)), { type: 'double', value: Number.MAX_VALUE })
 for (const invalid of ['Infinity', 'NaN', '1e309', '', ' ', '0x10']) assert.equal(parseVariableInput(double, invalid), null)
-assert.deepEqual(parseVariableInput({ type: 'string', key: 'name', default: '', maxLength: 10 }, ' a '), { type: 'string', value: ' a ' })
+assert.deepEqual(parseVariableInput({ type: 'string', default: '', maxLength: 10 }, ' a '), { type: 'string', value: ' a ' })
 const document: BossbarDocument = {
-  format: 'hanshu.bossbar', version: 2, id: 'simulation-test', texture: BOSSBAR_DEFAULT_TEXTURE,
+  format: 'hanshu.bossbar', version: 2, id: 'simulation-test', priority: 7, texture: BOSSBAR_DEFAULT_TEXTURE,
   layout: { dock: 'top-center', scale: 0.5, safeMargin: 12 }, variables: { health: double },
   components: [{ id: 'region', type: 'display_region', box: { x: 0, y: 0, width: 768, height: 72 } }],
 }
@@ -80,9 +82,74 @@ const html = renderToStaticMarkup(createElement(BossbarVariablesPanel, {
 const simulatedInput = html.match(/模拟值<\/span><span[^>]*>(<input[^>]+>)/)?.[1]
 assert.ok(simulatedInput, 'viewer 可看到模拟值输入')
 assert.doesNotMatch(simulatedInput, /disabled/, 'viewer 的本机模拟输入可以编辑')
-assert.match(html, /缺失键/)
+assert.match(html, /缺失变量/)
 assert.match(html, /类型不符/)
+assert.doesNotMatch(html, /blackboard|Map 键|服务端键|putDouble/)
 console.log('通过：完整有限 double、缺失/错误类型回落及 viewer 本机模拟输入')
+
+const bound: BossbarDocument = {
+  ...document,
+  variables: {
+    health: double,
+    unrelated: { type: 'double', default: 999 },
+    counter: { type: 'long', default: '9007199254740993' },
+    title: { type: 'string', default: '守卫', maxLength: 64 },
+    enraged: { type: 'bool', default: false },
+  },
+  components: [
+    ...document.components,
+    { id: 'health_fill', type: 'bar', box: { x: 0, y: 0, width: 200, height: 12 }, visible: true, opacity: 1,
+      progress: { var: 'health' }, fill: { kind: 'solid', color: '#FF0000FF' }, direction: 'left-to-right', smoothMs: 0 },
+    { id: 'title', type: 'text', box: { x: 0, y: 16, width: 200, height: 16 }, visible: true, opacity: 1,
+      fontSize: 12, color: '#FFFFFFFF', align: 'left', verticalAlign: 'middle', shadow: false,
+      runs: [{ text: '数值：' }, { var: 'counter' }] },
+  ],
+}
+const scenarios = buildScenarios(bound)
+assert.deepEqual(scenarios.filter((entry) => ['full', 'injured', 'low', 'empty', 'overheal', 'negative'].includes(entry.id))
+  .map((entry) => entry.values.health.value), [1, 0.35, 0.08, 0, 1.4, -0.2])
+assert.ok(scenarios.every((entry) => entry.values.unrelated.value === 999 && entry.values.counter.value === '9007199254740993'),
+  '进度模拟不改写无关服务端变量，也不推导数值上下限')
+const literal = { ...bound, components: bound.components.map((component) => component.type === 'bar' ? { ...component, progress: 0.6 } : component) }
+assert.deepEqual(buildScenarios(literal).map((entry) => entry.id), ['default', 'toggle-enraged'], '固定进度不生成变量模拟')
+const progressHtml = renderToStaticMarkup(createElement(BossbarProgressEditor, {
+  progress: { var: 'health' }, variables: bound.variables, readOnly: false, onChange() {},
+}))
+assert.match(progressHtml, /health/)
+assert.doesNotMatch(progressHtml, /counter|enraged|title|最大值|最小值|当前值/)
+const inspectorProps = { document: bound, texture: { width: 1, height: 1 }, readOnly: false,
+  onChange() {}, onMoveAll() {}, onFitRegion() {}, onFocusRegion() {} }
+const settingsHtml = renderToStaticMarkup(createElement(BossbarInspector, { ...inspectorProps, selection: ['region'] }))
+assert.match(settingsHtml, /优先级/)
+assert.match(settingsHtml, /min="-2147483648"/)
+assert.match(settingsHtml, /max="2147483647"/)
+const textHtml = renderToStaticMarkup(createElement(BossbarInspector, { ...inspectorProps, selection: ['title'] }))
+assert.match(textHtml, /counter/)
+assert.doesNotMatch(textHtml, /小数位|百分比|紧凑数值|比例范围|>格式</)
+console.log('通过：0–1 进度绑定、原始文本变量和根级优先级属性')
+
+const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+const storage = new Map<string, string>()
+Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+  getItem(key: string) { return storage.get(key) ?? null },
+  setItem(key: string, value: string) { storage.set(key, value) },
+} })
+try {
+  const key = 'hanshu.bossbarEditor.v2::prefs-project::prefs-file'
+  storage.set(key, JSON.stringify({ zoom: 1.5, panX: -20, playbackSpeed: 1.3,
+    previewOpen: true, previewGuiWidth: 1920, previewGuiHeight: 1080 }))
+  const view = loadEditorViewState('prefs-project', 'prefs-file')
+  assert.equal(view.zoom, 1.5)
+  assert.equal(view.panX, -20)
+  assert.equal(view.playbackSpeed, 1.3)
+  assert.ok(Object.keys(view).every((name) => !name.startsWith('preview')))
+  saveEditorViewState('prefs-project', 'prefs-file', view)
+  assert.doesNotMatch(storage.get(key)!, /previewOpen|previewGuiWidth|previewGuiHeight/)
+} finally {
+  if (previousStorage) Object.defineProperty(globalThis, 'localStorage', previousStorage)
+  else delete (globalThis as any).localStorage
+}
+console.log('通过：单视口偏好保留相机与播放状态，忽略旧游戏预览尺寸')
 
 // 为真实 hook 提供同步 React 调度器，验证正文来源切换后的行为；不复制历史实现。
 const hooksKey = '__bossbarEditorToolsHooks'

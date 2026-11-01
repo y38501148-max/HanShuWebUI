@@ -45,7 +45,7 @@ import { BossbarLayersPanel } from './BossbarLayersPanel'
 import { BossbarInspector, type BossbarPaintSlot } from './BossbarInspector'
 import { BossbarVariablesPanel } from './BossbarVariablesPanel'
 import { BossbarAtlasPanel, type BossbarUvTarget } from './BossbarAtlasPanel'
-import { BossbarPreviewPanel } from './BossbarPreviewPanel'
+import { BossbarSimulationControls } from './BossbarSimulationControls'
 import { Button } from './BossbarEditorUi'
 import { useBossbarTexture, useReferenceImage } from './useBossbarImages'
 import { updatePaintUv } from './editorPaint'
@@ -550,6 +550,27 @@ export function BossbarDesignView({
                   setView({ zoom: next.zoom, panX: next.panX, panY: next.panY })
                 }
               />
+              <BossbarSimulationControls
+                document={document}
+                timeMs={timeMs}
+                playing={playing}
+                speed={view.playbackSpeed}
+                issues={[...(texture.error ? [texture.error] : []), ...resolved.issues.map(describeDiagnostic)]}
+                scenarios={scenarios}
+                onPlayingChange={setPlaying}
+                onTimeChange={(nextTime) => {
+                  if (nextTime < timeMs) animationRef.current = null
+                  setTimeMs(nextTime)
+                }}
+                onSpeedChange={(speed) => setView({ playbackSpeed: speed })}
+                onScenario={(scenario) => {
+                  const toggleName = scenario.id.startsWith('toggle-') ? scenario.id.slice('toggle-'.length) : null
+                  setValues(toggleName
+                    ? { ...values, [toggleName]: { type: 'bool', value: resolved.values[toggleName]?.value !== true } }
+                    : { ...scenario.values })
+                  setPlaying(true)
+                }}
+              />
             </div>
             <aside className="bb-side">
               <div className="bb-tabs">
@@ -654,50 +675,7 @@ export function BossbarDesignView({
               </div>
             </aside>
           </div>
-          {view.previewOpen ? (
-            <BossbarPreviewPanel
-              document={document}
-              values={resolved.values}
-              bars={bars}
-              timeMs={timeMs}
-              playing={playing}
-              speed={view.playbackSpeed}
-              guiWidth={view.previewGuiWidth}
-              texture={texture.size}
-              textureImage={texture.image}
-              issues={[...(texture.error ? [texture.error] : []), ...resolved.issues.map(describeDiagnostic)]}
-              scenarios={scenarios}
-              active={active}
-              onPlayingChange={setPlaying}
-              onTimeChange={(nextTime) => {
-                if (nextTime < timeMs) animationRef.current = null
-                setTimeMs(nextTime)
-              }}
-              onSpeedChange={(speed) => setView({ playbackSpeed: speed })}
-              onGuiWidthChange={(width) => setView({ previewGuiWidth: Math.round(width) })}
-              onScenario={(scenario) => {
-                const toggleName = scenario.id.startsWith('toggle-') ? scenario.id.slice('toggle-'.length) : null
-                setValues(toggleName
-                  ? { ...values, [toggleName]: { type: 'bool', value: resolved.values[toggleName]?.value !== true } }
-                  : { ...scenario.values })
-                setPlaying(true)
-              }}
-            />
-          ) : (
-            <div className="bb-preview-collapsed">
-              <Button onClick={() => setView({ previewOpen: true })}>展开游戏预览</Button>
-            </div>
-          )}
           <footer className="bb-design-footer">
-            <label className="bb-toggle">
-              <input
-                type="checkbox"
-                checked={view.previewOpen}
-                onChange={(event) => setView({ previewOpen: event.target.checked })}
-              />
-              <span>显示游戏预览</span>
-            </label>
-            <span className="bb-footer-sep" />
             <label className="bb-footer-field">
               <span>参考底图</span>
               <select

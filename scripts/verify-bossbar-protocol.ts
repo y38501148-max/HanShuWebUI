@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { deflateSync, gzipSync } from 'node:zlib'
 import { readFile } from 'node:fs/promises'
-import { createBossbar, parseBossbarDocument } from '../src/workspaces/audiovisual/bossbar/parse'
+import { createBossbar, parseBossbarDocument, stringifyBossbar, upgradeBossbarV1 } from '../src/workspaces/audiovisual/bossbar/parse'
 import { decodeBase64, encodeBase64, pngInfo, validatePngPixels } from '../src/workspaces/audiovisual/bossbar/png'
-import { BOSSBAR_DEFAULT_TEXTURE, BOSSBAR_LIMITS } from '../src/workspaces/audiovisual/bossbar/protocol'
-import { computeDoubleRatio, resolveRange } from '../src/workspaces/audiovisual/bossbar/rules/range'
+import { BOSSBAR_DEFAULT_TEXTURE, BOSSBAR_LIMITS, longValue, type BossbarDocument, type BossbarProgress } from '../src/workspaces/audiovisual/bossbar/protocol'
+import { clampProgress, resolveProgress } from '../src/workspaces/audiovisual/bossbar/rules/range'
+import { formatRunValue } from '../src/workspaces/audiovisual/bossbar/rules/formatRun'
+import { removeVariable, renameVariable, variableReferences } from '../src/workspaces/audiovisual/bossbar/document'
 import { estimateSnapshotBytes } from '../src/workspaces/audiovisual/bossbar/rules/values'
 
 // Tests build PNG containers independently, with Node's zlib and a bitwise CRC.
@@ -125,40 +127,116 @@ rejectsTexture(Buffer.concat([
 assert.equal(pngInfo(png(Uint8Array.of(0, 1, 2, 3, 255)))?.width, 1)
 console.log('PASS PNG integrity, legal color/depth/Adam7 and bounded decompression')
 
-const longRange = {
-  value: { type: 'long' as const, value: '9007199254740993' },
-  min: { type: 'long' as const, value: '9007199254740992' },
-  max: { type: 'long' as const, value: '9007199254740994' },
+const base = createBossbar('simplified-test')
+assert.equal(base.priority, 0)
+assert.equal(upgradeBossbarV1({ format: 'hanshu.bossbar', version: 1, id: 'legacy' }).priority, 0)
+assert.equal(upgradeBossbarV1({ format: 'hanshu.bossbar', version: 1, id: ' Legacy ' }).id, ' Legacy ', 'explicit migration preserves the original ID for diagnosis')
+for (const priority of [-2147483648, 0, 2147483647]) {
+  const parsed = parseBossbarDocument(JSON.stringify({ ...base, priority }))
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) assert.equal(parsed.document.priority, priority)
 }
-const longDocument = {
-  ...createBossbar('long-test'),
-  components: [...createBossbar('long-test').components, {
+for (const priority of [-2147483649, 2147483648, 0.5, null]) {
+  const parsed = parseBossbarDocument(JSON.stringify({ ...base, priority }))
+  assert.equal(parsed.ok, false)
+  if (!parsed.ok) assert.ok(parsed.diagnostics.some((issue) => issue.path === 'priority'))
+}
+const omittedPriority = { ...base } as Partial<BossbarDocument>
+delete omittedPriority.priority
+const defaulted = parseBossbarDocument(JSON.stringify(omittedPriority))
+assert.equal(defaulted.ok, true)
+if (defaulted.ok) assert.equal(defaulted.document.priority, 0)
+
+const withProgress = (progress: BossbarProgress): BossbarDocument => ({
+  ...base,
+  variables: { hp: { type: 'double', default: 0.25 }, counter: { type: 'long', default: '9007199254740993' } },
+  components: [...base.components, {
     id: 'bar', type: 'bar', box: { x: 0, y: 0, width: 100, height: 10 },
-    range: longRange, fill: { kind: 'solid', color: '#FFFFFFFF' },
+    progress, direction: 'left-to-right', smoothMs: 0, visible: true, opacity: 1,
+    fill: { kind: 'solid', color: '#FFFFFFFF' },
+  }],
+})
+for (const [input, expected] of [[-Number.MAX_VALUE, 0], [-1, 0], [0, 0], [0.35, 0.35], [1, 1], [Number.MAX_VALUE, 1]]) {
+  assert.equal(parseBossbarDocument(JSON.stringify(withProgress(input))).ok, true)
+  assert.equal(clampProgress(input), expected)
+}
+const bound = withProgress({ var: 'hp' })
+assert.equal(resolveProgress({ var: 'hp' }, bound.variables, {}), 0.25, 'missing runtime value uses declared default')
+assert.equal(resolveProgress({ var: 'hp' }, bound.variables, { hp: { type: 'double', value: 2 } }), 1)
+assert.equal(resolveProgress({ var: 'hp' }, bound.variables, { hp: { type: 'long', value: '1' } }), 0.25)
+for (const reference of ['counter', 'missing']) {
+  const result = parseBossbarDocument(JSON.stringify(withProgress({ var: reference })))
+  assert.equal(result.ok, false)
+  if (!result.ok) assert.ok(result.diagnostics.some((issue) => issue.path === 'components[1].progress.var'))
+}
+for (const input of [null, { type: 'double', value: 0.5 }, { var: 'hp', min: 0 }, '0.5']) {
+  const result = parseBossbarDocument(JSON.stringify({ ...bound, components: [base.components[0], { ...bound.components[1], progress: input }] }))
+  assert.equal(result.ok, false)
+}
+assert.equal(clampProgress(Infinity), 0)
+const infiniteSource = JSON.stringify(withProgress(0.5)).replace('"progress":0.5', '"progress":1e400')
+assert.equal(parseBossbarDocument(infiniteSource).ok, false)
+
+const textDocument: BossbarDocument = {
+  ...bound,
+  variables: { ...bound.variables, label: { type: 'string', default: '服务端：1.2M（35.0%）', maxLength: 64 } },
+  components: [...bound.components, {
+    id: 'label', type: 'text', box: { x: 0, y: 12, width: 200, height: 20 },
+    visible: true, opacity: 1, fontSize: 16, color: '#FFFFFFFF', align: 'left', verticalAlign: 'middle', shadow: false,
+    runs: [{ var: 'label' }, { text: ' / ' }, { var: 'counter', color: '#FF0000FF' }],
   }],
 }
-assert.equal(parseBossbarDocument(JSON.stringify(longDocument)).ok, true)
-assert.equal(resolveRange(longRange, {}, {}).ratio, 0.5, 'adjacent integers above 2^53 remain exact')
-for (const field of ['value', 'min', 'max'] as const) {
-  for (const value of ['9223372036854775808', '-9223372036854775809']) {
-    const invalid = structuredClone(longDocument)
-    Object.assign(invalid.components[1], { range: { ...longRange, [field]: { type: 'long', value } } })
-    const result = parseBossbarDocument(JSON.stringify(invalid))
-    assert.equal(result.ok, false)
-    if (!result.ok) assert.ok(result.diagnostics.some((issue) => issue.path === 'components[1].range.' + field + '.value'))
-  }
+const textResult = parseBossbarDocument(stringifyBossbar(textDocument))
+assert.equal(textResult.ok, true)
+if (textResult.ok) assert.deepEqual(textResult.document.variables.counter, { type: 'long', default: '9007199254740993' })
+const undeclaredText = { ...textDocument, components: [...bound.components, { ...textDocument.components[2], runs: [{ var: 'toString' }] }] }
+assert.equal(parseBossbarDocument(JSON.stringify(undeclaredText)).ok, false, 'prototype properties are not declared variables')
+for (const value of ['-9223372036854775808', '9007199254740993', '9223372036854775807']) {
+  assert.equal(formatRunValue(longValue(value)), value, 'long text retains every decimal digit')
+}
+assert.throws(() => longValue(9223372036854775808n))
+assert.equal(formatRunValue({ type: 'double', value: 0.35 }), '0.35')
+assert.equal(formatRunValue({ type: 'string', value: '1.2M（35.0%）' }), '1.2M（35.0%）')
+assert.equal(formatRunValue({ type: 'bool', value: true }), 'true')
+assert.equal(formatRunValue(undefined), null)
+for (const field of ['format', 'digits', 'ratio']) {
+  const legacy = { ...textDocument, components: [...bound.components, { ...textDocument.components[2], runs: [{ text: 'old', [field]: field === 'digits' ? 2 : {} }] }] }
+  const result = parseBossbarDocument(JSON.stringify(legacy))
+  assert.equal(result.ok, false)
+  if (!result.ok) assert.ok(result.diagnostics.some((issue) => issue.code === 'obsolete_field' && issue.path === 'components[2].runs[0].' + field))
+}
+const legacyRange = { ...bound, components: [base.components[0], { ...bound.components[1], range: { value: 50, min: 0, max: 100 } }] }
+const legacyResult = parseBossbarDocument(JSON.stringify(legacyRange))
+assert.equal(legacyResult.ok, false)
+if (!legacyResult.ok) assert.ok(legacyResult.diagnostics.some((issue) => issue.path === 'components[1].range'))
+const legacyKey = { ...bound, variables: { hp: { type: 'double', default: 0, key: 'old_map_key' } } }
+assert.equal(parseBossbarDocument(JSON.stringify(legacyKey)).ok, false)
+
+const renamed = renameVariable(textDocument, 'hp', 'health')
+assert.equal(renamed.ok, true)
+if (renamed.ok) assert.equal(variableReferences(renamed.document, 'health')[0].role, 'progress')
+assert.equal(renameVariable(textDocument, 'hp', 'toString').ok, true, 'valid variable names may shadow prototype names')
+const removed = removeVariable(textDocument, 'counter', { long: '9007199254740993' })
+assert.equal(removed.ok, true)
+if (removed.ok) {
+  const text = removed.document.components[2]
+  assert.equal(text.type, 'text')
+  if (text.type === 'text') assert.deepEqual(text.runs[2], { text: '9007199254740993', color: '#FF0000FF' })
+}
+const removedProgress = removeVariable(bound, 'hp', { double: 0.8 })
+assert.equal(removedProgress.ok, true)
+if (removedProgress.ok) {
+  const bar = removedProgress.document.components[1]
+  assert.equal(bar.type, 'bar')
+  if (bar.type === 'bar') assert.equal(bar.progress, 0.8)
 }
 for (const count of [29, 64]) {
-  const document = { ...createBossbar('budget-test'), variables: Object.fromEntries(
-    Array.from({ length: count }, (_, i) => ['v' + i, { type: 'string' as const, key: 'v' + i, default: '', maxLength: 256 }]),
+  const document = { ...base, variables: Object.fromEntries(
+    Array.from({ length: count }, (_, i) => ['v' + i, { type: 'string' as const, default: '', maxLength: 256 }]),
   ) }
   const estimated = estimateSnapshotBytes(document).worstBytes
   const result = parseBossbarDocument(JSON.stringify(document))
   assert.equal(result.ok, estimated <= BOSSBAR_LIMITS.upsertBudgetBytes)
   if (!result.ok) assert.ok(result.diagnostics.some((issue) => issue.path === 'variables' && issue.code === 'budget'))
 }
-assert.equal(computeDoubleRatio(Number.MAX_VALUE, -Number.MAX_VALUE, 0), 1, 'overflow above maximum clamps full')
-assert.equal(computeDoubleRatio(-Number.MAX_VALUE, 0, Number.MAX_VALUE), 0, 'below minimum clamps empty')
-assert.equal(computeDoubleRatio(0, -Number.MAX_VALUE, Number.MAX_VALUE), 0.5, 'overflowing span normalizes')
-assert.equal(computeDoubleRatio(1, 1, 1), 0, 'empty range remains empty')
-console.log('PASS int64 constants, snapshot budget and extreme double clamping')
+console.log('PASS int32 priority, direct progress, raw text, legacy-field rejection and snapshot budget')

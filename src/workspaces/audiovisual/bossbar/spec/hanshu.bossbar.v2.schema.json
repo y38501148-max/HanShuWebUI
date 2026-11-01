@@ -9,6 +9,7 @@
     "format",
     "version",
     "id",
+    "priority",
     "texture",
     "layout",
     "variables",
@@ -20,6 +21,11 @@
     },
     "version": {
       "const": 2
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
     },
     "id": {
       "type": "string",
@@ -79,16 +85,11 @@
             "additionalProperties": false,
             "required": [
               "type",
-              "key",
               "default"
             ],
             "properties": {
               "type": {
                 "const": "long"
-              },
-              "key": {
-                "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
               },
               "default": {
                 "type": "string",
@@ -101,16 +102,11 @@
             "additionalProperties": false,
             "required": [
               "type",
-              "key",
               "default"
             ],
             "properties": {
               "type": {
                 "const": "double"
-              },
-              "key": {
-                "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
               },
               "default": {
                 "type": "number"
@@ -122,16 +118,11 @@
             "additionalProperties": false,
             "required": [
               "type",
-              "key",
               "default"
             ],
             "properties": {
               "type": {
                 "const": "bool"
-              },
-              "key": {
-                "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
               },
               "default": {
                 "type": "boolean"
@@ -143,17 +134,12 @@
             "additionalProperties": false,
             "required": [
               "type",
-              "key",
               "default",
               "maxLength"
             ],
             "properties": {
               "type": {
                 "const": "string"
-              },
-              "key": {
-                "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
               },
               "default": {
                 "type": "string",
@@ -569,7 +555,7 @@
               "box",
               "visible",
               "opacity",
-              "range",
+              "progress",
               "direction",
               "fill",
               "smoothMs"
@@ -633,166 +619,25 @@
                 "minimum": 0,
                 "maximum": 1
               },
-              "range": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "value",
-                  "min",
-                  "max"
-                ],
-                "properties": {
-                  "value": {
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "long"
-                          },
-                          "value": {
-                            "type": "string",
-                            "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "double"
-                          },
-                          "value": {
-                            "type": "number"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "var"
-                        ],
-                        "properties": {
-                          "var": {
-                            "type": "string",
-                            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                          }
-                        }
-                      }
-                    ]
+              "progress": {
+                "oneOf": [
+                  {
+                    "type": "number"
                   },
-                  "min": {
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "long"
-                          },
-                          "value": {
-                            "type": "string",
-                            "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "double"
-                          },
-                          "value": {
-                            "type": "number"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "var"
-                        ],
-                        "properties": {
-                          "var": {
-                            "type": "string",
-                            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                          }
-                        }
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "var"
+                    ],
+                    "properties": {
+                      "var": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
                       }
-                    ]
-                  },
-                  "max": {
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "long"
-                          },
-                          "value": {
-                            "type": "string",
-                            "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "type",
-                          "value"
-                        ],
-                        "properties": {
-                          "type": {
-                            "const": "double"
-                          },
-                          "value": {
-                            "type": "number"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "var"
-                        ],
-                        "properties": {
-                          "var": {
-                            "type": "string",
-                            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                          }
-                        }
-                      }
-                    ]
+                    }
                   }
-                }
+                ]
               },
               "direction": {
                 "enum": [
@@ -1203,214 +1048,12 @@
                       "type": "object",
                       "additionalProperties": false,
                       "required": [
-                        "var",
-                        "format",
-                        "digits"
+                        "var"
                       ],
                       "properties": {
                         "var": {
                           "type": "string",
                           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                        },
-                        "format": {
-                          "enum": [
-                            "string",
-                            "number",
-                            "compact",
-                            "percent"
-                          ]
-                        },
-                        "digits": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 4
-                        },
-                        "color": {
-                          "type": "string",
-                          "pattern": "^#[0-9A-Fa-f]{8}$"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": [
-                        "ratio",
-                        "format",
-                        "digits"
-                      ],
-                      "properties": {
-                        "ratio": {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "required": [
-                            "value",
-                            "min",
-                            "max"
-                          ],
-                          "properties": {
-                            "value": {
-                              "oneOf": [
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "long"
-                                    },
-                                    "value": {
-                                      "type": "string",
-                                      "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "double"
-                                    },
-                                    "value": {
-                                      "type": "number"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "var"
-                                  ],
-                                  "properties": {
-                                    "var": {
-                                      "type": "string",
-                                      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            "min": {
-                              "oneOf": [
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "long"
-                                    },
-                                    "value": {
-                                      "type": "string",
-                                      "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "double"
-                                    },
-                                    "value": {
-                                      "type": "number"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "var"
-                                  ],
-                                  "properties": {
-                                    "var": {
-                                      "type": "string",
-                                      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            "max": {
-                              "oneOf": [
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "long"
-                                    },
-                                    "value": {
-                                      "type": "string",
-                                      "pattern": "^(?:0|-?[1-9][0-9]*)$"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "type",
-                                    "value"
-                                  ],
-                                  "properties": {
-                                    "type": {
-                                      "const": "double"
-                                    },
-                                    "value": {
-                                      "type": "number"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "additionalProperties": false,
-                                  "required": [
-                                    "var"
-                                  ],
-                                  "properties": {
-                                    "var": {
-                                      "type": "string",
-                                      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-                                    }
-                                  }
-                                }
-                              ]
-                            }
-                          }
-                        },
-                        "format": {
-                          "enum": [
-                            "percent",
-                            "number"
-                          ]
-                        },
-                        "digits": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 4
                         },
                         "color": {
                           "type": "string",

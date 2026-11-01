@@ -13,7 +13,6 @@ import {
   type BossbarDisplayRegionComponent,
   type BossbarPaint,
   type BossbarPaintableComponent,
-  type BossbarRange,
   type BossbarTextComponent,
   type BossbarTextRun,
   type BossbarVariable,
@@ -90,11 +89,7 @@ export function createComponent(
     const component: BossbarBarComponent = {
       ...common,
       type: 'bar',
-      range: {
-        value: { type: 'double', value: 50 },
-        min: { type: 'double', value: 0 },
-        max: { type: 'double', value: 100 },
-      },
+      progress: 0.5,
       direction: BOSSBAR_DEFAULTS.direction,
       fill: { kind: 'solid', color: '#ED242CFF' },
       smoothMs: BOSSBAR_DEFAULTS.smoothMs,
@@ -244,7 +239,7 @@ export function fitRegionToComponents<T extends WithComponents>(
 export type VariableReference = {
   path: string
   componentId: string
-  role: 'number' | 'visibility'
+  role: 'progress' | 'text' | 'visibility'
 }
 
 export function variableReferences(
@@ -259,30 +254,15 @@ export function variableReferences(
       references.push({ path: base + '.visible.var', componentId: component.id, role: 'visibility' })
     }
     if (component.type === 'bar') {
-      for (const key of ['value', 'min', 'max'] as const) {
-        const operand = component.range[key]
-        if ('var' in operand && operand.var === name) {
-          references.push({ path: base + '.range.' + key, componentId: component.id, role: 'number' })
-        }
+      if (typeof component.progress === 'object' && component.progress.var === name) {
+        references.push({ path: base + '.progress.var', componentId: component.id, role: 'progress' })
       }
       return
     }
     if (component.type !== 'text') return
     component.runs.forEach((run, runIndex) => {
       if ('var' in run && run.var === name) {
-        references.push({ path: base + '.runs[' + runIndex + '].var', componentId: component.id, role: 'number' })
-      }
-      if ('ratio' in run) {
-        for (const key of ['value', 'min', 'max'] as const) {
-          const operand = run.ratio[key]
-          if ('var' in operand && operand.var === name) {
-            references.push({
-              path: base + '.runs[' + runIndex + '].ratio.' + key,
-              componentId: component.id,
-              role: 'number',
-            })
-          }
-        }
+        references.push({ path: base + '.runs[' + runIndex + '].var', componentId: component.id, role: 'text' })
       }
     })
   })
@@ -291,33 +271,12 @@ export function variableReferences(
 
 type ReferenceRewrite =
   | { kind: 'rename'; to: string }
-  | { kind: 'constant'; long: string; double: number; bool: boolean }
-
-function rewriteRange(range: BossbarRange, from: string, action: ReferenceRewrite): BossbarRange {
-  const replace = (operand: BossbarRange['value']): BossbarRange['value'] => {
-    if (!('var' in operand) || operand.var !== from) return operand
-    if (action.kind === 'rename') return { var: action.to }
-    return { type: 'double', value: action.double }
-  }
-  return { value: replace(range.value), min: replace(range.min), max: replace(range.max) }
-}
+  | { kind: 'constant'; double: number; bool: boolean; text: string }
 
 function rewriteRun(run: BossbarTextRun, from: string, action: ReferenceRewrite): BossbarTextRun {
-  if ('var' in run && run.var === from) {
-    if (action.kind === 'rename') return { ...run, var: action.to }
-    return {
-      ratio: {
-        value: { type: 'double', value: action.double },
-        min: { type: 'double', value: 0 },
-        max: { type: 'double', value: 1 },
-      },
-      format: 'number',
-      digits: run.digits,
-      ...(run.color ? { color: run.color } : {}),
-    }
-  }
-  if ('ratio' in run) return { ...run, ratio: rewriteRange(run.ratio, from, action) }
-  return run
+  if (!('var' in run) || run.var !== from) return run
+  if (action.kind === 'rename') return { ...run, var: action.to }
+  return { text: action.text, ...(run.color ? { color: run.color } : {}) }
 }
 
 function rewriteReferences<T extends WithComponents>(
@@ -333,8 +292,8 @@ function rewriteReferences<T extends WithComponents>(
       if (typeof component.visible === 'object' && component.visible.var === from) {
         next = { ...next, visible: action.kind === 'rename' ? { var: action.to } : action.bool }
       }
-      if (next.type === 'bar') {
-        next = { ...next, range: rewriteRange(next.range, from, action) }
+      if (next.type === 'bar' && typeof next.progress === 'object' && next.progress.var === from) {
+        next = { ...next, progress: action.kind === 'rename' ? { var: action.to } : action.double }
       } else if (next.type === 'text') {
         next = { ...next, runs: next.runs.map((run) => rewriteRun(run, from, action)) }
       }
@@ -348,10 +307,10 @@ export function renameVariable<T extends WithComponents & { variables: Record<st
   from: string,
   to: string,
 ): EditResult<T> {
-  if (!(from in document.variables)) {
+  if (!Object.hasOwn(document.variables, from)) {
     return { ok: false, diagnostics: [bossbarDiagnostic('unknown_reference', 'variables.' + from, '变量不存在')] }
   }
-  if (to in document.variables) {
+  if (Object.hasOwn(document.variables, to)) {
     return { ok: false, diagnostics: [bossbarDiagnostic('duplicate_id', 'variables.' + to, '变量名已存在')] }
   }
   if (!BOSSBAR_NAME_PATTERN.test(to)) {
@@ -373,7 +332,7 @@ export function renameVariable<T extends WithComponents & { variables: Record<st
 export function removeVariable<T extends WithComponents & { variables: Record<string, BossbarVariable> }>(
   document: T,
   name: string,
-  replacement?: { long?: string; double?: number; bool?: boolean },
+  replacement?: { long?: string; double?: number; bool?: boolean; string?: string },
 ): EditResult<T> {
   const references = variableReferences(document, name)
   if (references.length && replacement === undefined) {
@@ -390,9 +349,11 @@ export function removeVariable<T extends WithComponents & { variables: Record<st
   if (references.length) {
     next = rewriteReferences(next, name, {
       kind: 'constant',
-      long: replacement?.long ?? '0',
       double: replacement?.double ?? 0,
       bool: replacement?.bool ?? false,
+      text: document.variables[name]?.type === 'long' ? replacement?.long ?? '0'
+        : document.variables[name]?.type === 'double' ? String(replacement?.double ?? 0)
+          : document.variables[name]?.type === 'bool' ? String(replacement?.bool ?? false) : replacement?.string ?? '',
     })
   }
   return { ok: true, document: next }
@@ -409,7 +370,7 @@ export function upsertVariable<T extends { variables: Record<string, BossbarVari
       diagnostics: [bossbarDiagnostic('name', 'variables.' + name, '变量名需匹配 [A-Za-z][A-Za-z0-9_]{0,63}')],
     }
   }
-  if (Object.keys(document.variables).length >= BOSSBAR_LIMITS.variables && !(name in document.variables)) {
+  if (Object.keys(document.variables).length >= BOSSBAR_LIMITS.variables && !Object.hasOwn(document.variables, name)) {
     return {
       ok: false,
       diagnostics: [bossbarDiagnostic('budget', 'variables', '单文档最多 ' + BOSSBAR_LIMITS.variables + ' 个变量')],
@@ -431,27 +392,6 @@ export function removeVariableForce(
 
 export function collectDocumentHints(document: WithComponents): BossbarDiagnostic[] {
   const hints: BossbarDiagnostic[] = []
-  document.components.forEach((component, index) => {
-    if (component.type !== 'bar') return
-    const { min, max } = component.range
-    const minLong = 'type' in min && min.type === 'long' ? BigInt(min.value) : null
-    const maxLong = 'type' in max && max.type === 'long' ? BigInt(max.value) : null
-    if (minLong !== null && maxLong !== null) {
-      if (maxLong <= minLong) {
-        hints.push(
-          bossbarDiagnostic('zero_span', 'components[' + index + '].range', 'max 不大于 min，这条会一直显示 0%', 'warning'),
-        )
-      }
-      return
-    }
-    const minValue = 'type' in min && typeof min.value === 'number' ? min.value : null
-    const maxValue = 'type' in max && typeof max.value === 'number' ? max.value : null
-    if (minValue !== null && maxValue !== null && maxValue <= minValue) {
-      hints.push(
-        bossbarDiagnostic('zero_span', 'components[' + index + '].range', 'max 不大于 min，这条会一直显示 0%', 'warning'),
-      )
-    }
-  })
   if (!paintableComponents(document).length) {
     hints.push(bossbarDiagnostic('empty_canvas', 'components', '只有显示区域：先添加背景、条或文本', 'warning'))
   }

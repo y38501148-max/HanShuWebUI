@@ -1,34 +1,26 @@
 import {
   BOSSBAR_BAR_DIRECTIONS,
+  BOSSBAR_LIMITS,
   BOSSBAR_TEXT_ALIGNS,
-  BOSSBAR_TEXT_FORMATS,
   BOSSBAR_TEXT_VERTICAL_ALIGNS,
   isDisplayRegion,
   type BossbarBackgroundComponent,
   type BossbarBarComponent,
   type BossbarDocument,
-  type BossbarRange,
   type BossbarTextAlign,
   type BossbarTextComponent,
-  type BossbarTextFormat,
   type BossbarTextRun,
   type BossbarTextVerticalAlign,
 } from '../protocol'
 import { clampBoxToRegion } from '../document'
 import { Button, ColorField, Empty, NumberField, Row, Section, SelectField, TextField, ToggleField } from './BossbarEditorUi'
 import { BossbarPaintEditor } from './BossbarPaintEditor'
-import { BossbarRangeEditor } from './BossbarRangeEditor'
+import { BossbarProgressEditor } from './BossbarProgressEditor'
 
 /** 右侧属性面板：显示区域、背景、条、文本的完整编辑 */
 
 const ALIGN_LABELS: Record<BossbarTextAlign, string> = { left: '左对齐', center: '居中', right: '右对齐' }
 const VERTICAL_LABELS: Record<BossbarTextVerticalAlign, string> = { top: '顶部', middle: '垂直居中', bottom: '底部' }
-const FORMAT_LABELS: Record<BossbarTextFormat, string> = {
-  string: '文本',
-  number: '数值',
-  compact: '紧凑数值',
-  percent: '百分比',
-}
 const DIRECTION_LABELS: Record<(typeof BOSSBAR_BAR_DIRECTIONS)[number], string> = {
   'left-to-right': '从左到右',
   'right-to-left': '从右到左',
@@ -65,6 +57,7 @@ export function BossbarInspector({
   if (!component) {
     return (
       <div className="bb-inspector">
+        <DisplaySettings document={document} readOnly={readOnly} onChange={onChange} />
         <Section title="显示区域">
           {region ? (
             <RegionFields document={document} region={region} readOnly={readOnly} onChange={onChange} />
@@ -91,6 +84,7 @@ export function BossbarInspector({
   if (isDisplayRegion(component)) {
     return (
       <div className="bb-inspector">
+        <DisplaySettings document={document} readOnly={readOnly} onChange={onChange} />
         <Section title="显示区域">
           <RegionFields document={document} region={component} readOnly={readOnly} onChange={onChange} />
         </Section>
@@ -174,6 +168,29 @@ export function BossbarInspector({
         />
       )}
     </div>
+  )
+}
+
+function DisplaySettings({ document, readOnly, onChange }: {
+  document: BossbarDocument
+  readOnly: boolean
+  onChange: (document: BossbarDocument) => void
+}) {
+  return (
+    <Section title="显示设置">
+      <Row label="优先级">
+        <NumberField value={document.priority} min={BOSSBAR_LIMITS.priority.min} max={BOSSBAR_LIMITS.priority.max} disabled={readOnly}
+          onCommit={(priority) => onChange({ ...document, priority: Math.trunc(priority) })} />
+      </Row>
+      <Row label="缩放">
+        <NumberField value={document.layout.scale} min={BOSSBAR_LIMITS.layout.minScale} max={BOSSBAR_LIMITS.layout.maxScale}
+          step={0.1} disabled={readOnly} onCommit={(scale) => onChange({ ...document, layout: { ...document.layout, scale } })} />
+      </Row>
+      <Row label="安全边距">
+        <NumberField value={document.layout.safeMargin} min={0} max={BOSSBAR_LIMITS.layout.maxSafeMargin} disabled={readOnly}
+          onCommit={(safeMargin) => onChange({ ...document, layout: { ...document.layout, safeMargin } })} />
+      </Row>
+    </Section>
   )
 }
 
@@ -354,12 +371,12 @@ function BarFields({
 }) {
   return (
     <>
-      <Section title="数值">
-        <BossbarRangeEditor
-          range={component.range}
+      <Section title="进度">
+        <BossbarProgressEditor
+          progress={component.progress}
           variables={document.variables}
           readOnly={readOnly}
-          onChange={(range) => update({ range })}
+          onChange={(progress) => update({ progress })}
         />
         <Row label="方向">
           <SelectField
@@ -553,14 +570,9 @@ function RunEditor({
   onRemove: () => void
   onMove: (direction: -1 | 1) => void
 }) {
-  const kind = 'text' in run ? 'text' : 'var' in run ? 'var' : 'ratio'
-  const ratioRun = run as Extract<BossbarTextRun, { ratio: BossbarRange }>
-  const numericNames = Object.entries(document.variables)
-    .filter(([, variable]) => variable.type === 'long' || variable.type === 'double')
-    .map(([name]) => name)
-  const stringNames = Object.entries(document.variables)
-    .filter(([, variable]) => variable.type === 'string' || variable.type === 'bool')
-    .map(([name]) => name)
+  const kind = 'text' in run ? 'text' : 'var'
+  const names = Object.keys(document.variables)
+  const color = run.color === undefined ? {} : { color: run.color }
   return (
     <div className="bb-run">
       <div className="bb-run-head">
@@ -568,116 +580,37 @@ function RunEditor({
           disabled={readOnly}
           value={kind}
           options={[
-            { value: 'text', label: '字面文本' },
-            { value: 'var', label: '变量' },
-            { value: 'ratio', label: '比例' },
+            { value: 'text', label: '文本' },
+            ...(names.length || kind === 'var' ? [{ value: 'var' as const, label: '变量' }] : []),
           ]}
           onCommit={(next) => {
             if (next === kind) return
-            if (next === 'text') onChange({ text: '' })
-            else if (next === 'var') onChange({ var: stringNames[0] ?? numericNames[0] ?? '', format: 'string', digits: 0 })
-            else
-              onChange({
-                ratio: {
-                  value: { type: 'double', value: 0 },
-                  min: { type: 'double', value: 0 },
-                  max: { type: 'double', value: 1 },
-                },
-                format: 'percent',
-                digits: 0,
-              })
+            if (next === 'text') onChange({ ...color, text: '' })
+            else if (names.length) onChange({ ...color, var: names[0] })
           }}
         />
         <span className="bb-run-actions">
-          <button type="button" disabled={readOnly} onClick={() => onMove(-1)} title="上移">
-            ↑
-          </button>
-          <button type="button" disabled={readOnly} onClick={() => onMove(1)} title="下移">
-            ↓
-          </button>
-          <button type="button" disabled={readOnly} onClick={onRemove} title="删除">
-            ×
-          </button>
+          <button type="button" disabled={readOnly} onClick={() => onMove(-1)} title="上移">↑</button>
+          <button type="button" disabled={readOnly} onClick={() => onMove(1)} title="下移">↓</button>
+          <button type="button" disabled={readOnly} onClick={onRemove} title="删除">×</button>
         </span>
       </div>
-      {kind === 'text' && (
+      {'text' in run ? (
         <Row label="文本">
-          <TextField
-            disabled={readOnly}
-            value={(run as { text: string }).text}
-            onCommit={(text) => onChange({ ...(run as { text: string }), text })}
-          />
+          <TextField disabled={readOnly} value={run.text} onCommit={(text) => onChange({ ...run, text })} />
+        </Row>
+      ) : (
+        <Row label="变量">
+          <SelectField disabled={readOnly} value={run.var}
+            options={names.map((name) => ({ value: name, label: name }))}
+            onCommit={(name) => onChange({ ...run, var: name })} />
         </Row>
       )}
-      {kind === 'var' && (
-        <>
-          <Row label="变量">
-            <SelectField
-              disabled={readOnly}
-              value={(run as { var: string }).var}
-              options={[...stringNames, ...numericNames].filter((name, index, all) => all.indexOf(name) === index).map((name) => ({ value: name, label: name }))}
-              onCommit={(name) => onChange({ ...(run as Exclude<BossbarTextRun, { text: string } | { ratio: BossbarRange }>), var: name })}
-            />
-          </Row>
-          <Row label="格式">
-            <SelectField
-              disabled={readOnly}
-              value={(run as { format: BossbarTextFormat }).format}
-              options={BOSSBAR_TEXT_FORMATS.map((format) => ({ value: format, label: FORMAT_LABELS[format] }))}
-              onCommit={(format) => onChange({ ...(run as { var: string; format: BossbarTextFormat; digits: number }), format })}
-            />
-          </Row>
-          <Row label="小数位">
-            <NumberField
-              value={(run as { digits: number }).digits}
-              min={0}
-              max={4}
-              disabled={readOnly}
-              onCommit={(digits) => onChange({ ...(run as { var: string; format: BossbarTextFormat; digits: number }), digits: Math.round(digits) })}
-            />
-          </Row>
-        </>
-      )}
-      {kind === 'ratio' && (
-        <>
-          <BossbarRangeEditor
-            label="比例范围"
-            range={ratioRun.ratio}
-            variables={document.variables}
-            readOnly={readOnly}
-            onChange={(ratio) => onChange({ ...ratioRun, ratio })}
-          />
-          <Row label="显示">
-            <SelectField
-              disabled={readOnly}
-              value={ratioRun.format}
-              options={[
-                { value: 'percent', label: '百分比 %' },
-                { value: 'number', label: '0–1 数值' },
-              ]}
-              onCommit={(format) => onChange({ ...ratioRun, format })}
-            />
-          </Row>
-          <Row label="小数位">
-            <NumberField
-              value={ratioRun.digits}
-              min={0}
-              max={4}
-              disabled={readOnly}
-              onCommit={(digits) => onChange({ ...ratioRun, digits: Math.round(digits) })}
-            />
-          </Row>
-        </>
-      )}
-      {'color' in run && run.color !== undefined ? (
+      {run.color !== undefined && (
         <Row label="片段颜色">
-          <ColorField
-            disabled={readOnly}
-            value={run.color}
-            onCommit={(color) => onChange({ ...run, color })}
-          />
+          <ColorField disabled={readOnly} value={run.color} onCommit={(next) => onChange({ ...run, color: next })} />
         </Row>
-      ) : null}
+      )}
     </div>
   )
 }

@@ -14,9 +14,9 @@ import {
 /**
  * 变量取值。
  *
- * 输入是带类型标签的值（与 bossbar-1 线协议同一形状）。缺失、类型不符、
+ * 输入是服务端发来的带类型标签的值。缺失、类型不符、
  * long 超范围、字符串超长一律回落到声明默认值，并发出一条诊断（调用方负责限频）。
- * 不读任意 Python 属性，也不做隐式类型转换。
+ * 客户端只按声明读取，不做隐式类型转换。
  */
 
 function isTypedValue(raw: unknown): raw is BossbarValue {
@@ -81,35 +81,20 @@ export function resolveValues(
   return { values, issues }
 }
 
-/** 文档变量 → Map 键；同一键被多个变量引用时取第一个（同步按唯一键提取） */
-export function valuesByKey(
-  document: BossbarDocument,
-  values: BossbarValueMap,
-): Record<string, BossbarValue> {
-  const byKey: Record<string, BossbarValue> = {}
-  for (const [name, variable] of Object.entries(document.variables ?? {})) {
-    if (variable.key in byKey) continue
-    const value = values[name]
-    if (value) byKey[variable.key] = value
-  }
-  return byKey
-}
-
 /** 单实例最坏快照大小估算：按声明 maxLength 与 long 定点宽度计算 */
 export function estimateSnapshotBytes(document: BossbarDocument): {
   worstBytes: number
-  perValue: { name: string; key: string; bytes: number }[]
+  perValue: { name: string; bytes: number }[]
 } {
-  const perValue: { name: string; key: string; bytes: number }[] = []
+  const perValue: { name: string; bytes: number }[] = []
   for (const [name, variable] of Object.entries(document.variables ?? {})) {
     const nameBytes = new TextEncoder().encode(name).length
-    const keyBytes = new TextEncoder().encode(variable.key).length
     let valueBytes = 0
     if (variable.type === 'string') valueBytes = variable.maxLength * 4
     else if (variable.type === 'long') valueBytes = 20
     else if (variable.type === 'double') valueBytes = 8
     else valueBytes = 1
-    perValue.push({ name, key: variable.key, bytes: nameBytes + keyBytes + valueBytes + 6 })
+    perValue.push({ name, bytes: nameBytes + valueBytes + 6 })
   }
   const worstBytes = perValue.reduce((sum, entry) => sum + entry.bytes, 32)
   return { worstBytes, perValue }

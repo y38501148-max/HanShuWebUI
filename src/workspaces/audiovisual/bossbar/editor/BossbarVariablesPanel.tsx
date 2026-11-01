@@ -17,17 +17,17 @@ import { estimateSnapshotBytes } from '../rules/values'
 /**
  * 变量面板。
  *
- * 来源固定是 `blackboard.bossbar`；这里只声明文档变量名 → Map 键、类型、默认值，
+ * 声明服务端变量名、类型和默认值，
  * 并给出本机模拟值。long 用十进制文本输入，不经过浏览器数值控件。
  */
 
 const TYPE_OPTIONS = BOSSBAR_VARIABLE_TYPES.map((type) => ({ value: type, label: VARIABLE_TYPE_LABELS[type] }))
 
-function emptyVariable(type: BossbarVariableType, key: string): BossbarVariable {
-  if (type === 'long') return { type: 'long', key, default: '0' }
-  if (type === 'double') return { type: 'double', key, default: 0 }
-  if (type === 'bool') return { type: 'bool', key, default: false }
-  return { type: 'string', key, default: '', maxLength: 64 }
+function emptyVariable(type: BossbarVariableType): BossbarVariable {
+  if (type === 'long') return { type: 'long', default: '0' }
+  if (type === 'double') return { type: 'double', default: 0 }
+  if (type === 'bool') return { type: 'bool', default: false }
+  return { type: 'string', default: '', maxLength: 64 }
 }
 
 export function BossbarVariablesPanel({
@@ -67,7 +67,7 @@ export function BossbarVariablesPanel({
       setProblems(['变量名已存在：' + name])
       return
     }
-    const result = upsertVariable(document, name, emptyVariable(pendingType, name))
+    const result = upsertVariable(document, name, emptyVariable(pendingType))
     if (!result.ok) {
       setProblems(result.diagnostics.map((entry) => entry.message))
       return
@@ -82,7 +82,7 @@ export function BossbarVariablesPanel({
     <div className="bb-variables">
       <Section title="新增变量">
         <Row label="变量名">
-          <TextField value={pendingName} onCommit={setPendingName} placeholder="health" disabled={readOnly} />
+          <TextField value={pendingName} onCommit={setPendingName} placeholder="healthProgress" disabled={readOnly} />
         </Row>
         <Row label="类型">
           <SelectField value={pendingType} options={TYPE_OPTIONS} onCommit={setPendingType} disabled={readOnly} />
@@ -159,7 +159,7 @@ function VariableRow({
   }
 
   const changeType = (type: BossbarVariableType) => {
-    const target = emptyVariable(type, variable.key)
+    const target = emptyVariable(type)
     onDocumentChange({ ...document, variables: { ...document.variables, [name]: target } })
   }
 
@@ -203,20 +203,6 @@ function VariableRow({
         )}
         <span className="bb-variable-refs">{references.length} 处引用</span>
       </div>
-      <Row label="Map 键">
-        <TextField
-          mono
-          disabled={readOnly}
-          value={variable.key}
-          onCommit={(key) => {
-            if (!BOSSBAR_NAME_PATTERN.test(key.trim())) {
-              onProblems(['Map 键需匹配 [A-Za-z][A-Za-z0-9_]{0,63}'])
-              return
-            }
-            replace({ key: key.trim() } as Partial<BossbarVariable>)
-          }}
-        />
-      </Row>
       <Row label="类型">
         <SelectField
           disabled={readOnly}
@@ -265,7 +251,7 @@ function VariableRow({
         )}
       </Row>
       {variable.type === 'string' && (
-        <Row label="maxLength">
+        <Row label="最长字符数">
           <NumberField
             value={variable.maxLength}
             min={1}
@@ -280,7 +266,7 @@ function VariableRow({
           value={simulationMode}
           options={[
             { value: 'value', label: '正常值' },
-            { value: 'missing', label: '缺失键' },
+            { value: 'missing', label: '缺失变量' },
             { value: 'wrong-type', label: '类型不符' },
           ]}
           onCommit={(mode) => onValuesChange(simulateVariable(values, name, variable, mode))}
@@ -299,7 +285,7 @@ function VariableRow({
             onValuesChange({ ...values, [name]: parsed })
           }}
         />
-      </Row> : <p className="bb-hint">{simulationMode === 'missing' ? '未提供 Map 键' : '传入类型与声明不符'}，预览使用默认值。</p>}
+      </Row> : <p className="bb-hint">{simulationMode === 'missing' ? '服务端未提供此变量' : '传入类型与声明不符'}，预览使用默认值。</p>}
       {references.length > 0 && (
         <ul className="bb-refs">
           {references.slice(0, 6).map((reference) => (
@@ -326,7 +312,9 @@ function VariableRow({
                     ? { long: '0' }
                     : variable.type === 'double'
                       ? { double: 0 }
-                      : { bool: false }
+                      : variable.type === 'bool'
+                        ? { bool: false }
+                        : { string: '' }
                 const result = removeVariable(document, name, replacement)
                 if (!result.ok) {
                   onProblems(result.diagnostics.map((entry) => entry.message))

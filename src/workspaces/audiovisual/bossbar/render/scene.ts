@@ -9,8 +9,7 @@ import {
 import { bossbarDiagnostic } from '../protocol'
 import { parseColor } from '../rules/color'
 import { formatRunValue } from '../rules/formatRun'
-import { formatNumber, formatPercent } from '../rules/numberFormat'
-import { resolveRange } from '../rules/range'
+import { resolveProgress } from '../rules/range'
 import { sampleAnimation } from '../rules/frames'
 import { barSegment, fitSprite, intersectRect, nineSliceSprites, type Rect } from '../rules/layout'
 import { singleLine } from '../rules/text'
@@ -185,10 +184,10 @@ export function buildScene(input: BossbarSceneInput): BossbarScene {
     }
 
     if (component.type === 'bar') {
-      const range = resolveRange(component.range, document.variables, values)
+      const progress = resolveProgress(component.progress, document.variables, values)
       const view = input.bars?.[component.id]
-      const fillRatio = view ? view.value : range.ratio
-      const trailRatio = view ? view.trail : range.ratio
+      const fillRatio = view ? view.value : progress
+      const trailRatio = view ? view.trail : progress
       if (component.trail && trailRatio > fillRatio) {
         const segment = barSegment(box, fillRatio, trailRatio, component.direction)
         if (segment) {
@@ -209,22 +208,16 @@ export function buildScene(input: BossbarSceneInput): BossbarScene {
         return
       }
       if ('var' in run) {
-        const text = formatRunValue(values[run.var], run.format, run.digits)
+        const text = formatRunValue(values[run.var])
         if (text === null) {
           issues.push(
-            bossbarDiagnostic('run_value', base + '.runs[' + runIndex + ']', '变量 ' + run.var + ' 与格式 ' + run.format + ' 不匹配', 'warning'),
+            bossbarDiagnostic('run_value', base + '.runs[' + runIndex + ']', '缺少有效变量 ' + run.var, 'warning'),
           )
           return
         }
         runs.push({ text, color: run.color ?? component.color })
         return
       }
-      const ratio = resolveRange(run.ratio, document.variables, values)
-      const text =
-        run.format === 'percent'
-          ? formatPercent(ratio.ratio, run.digits)
-          : formatNumber(ratio.ratio, run.digits)
-      runs.push({ text, color: run.color ?? component.color })
     })
 
     commands.push({

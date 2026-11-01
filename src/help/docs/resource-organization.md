@@ -58,10 +58,14 @@
 
 商店分类原生格式为 `.shop`，物理目录为 `src/shop/`，支持同格式导入。共享虚拟文件夹不改变模板路径。`.shop` 保存模板，不保存实例组合、参数注入或具体库存实体；见[商店模板规范](#shop-guide)。
 
+## 视听效果
+
+视听效果工作区分类在 `AUDIOVISUAL_CATEGORIES`，与 `GAMEPLAY_CATEGORIES` 并列。当前仅 **BOSS血条**：原生格式 `.bossbar`，物理目录 `src/bossbars/`，导出到 PAK 的 `bossbars/`。不要把视听分类塞进游戏性分类表。详见[视听效果工作区](#audiovisual-workspace)。
+
 ## 新增资源类型
 
 1. 在 `RESOURCE_TYPES` 声明扩展名、物理目录和业务分类。
-2. 在分类的 `types` / `imports` 分别声明原生格式与转换输入。
+2. 在对应工作区分类表（`GAMEPLAY_CATEGORIES` / `AUDIOVISUAL_CATEGORIES`）的 `types` / `imports` 分别声明原生格式与转换输入。
 3. 接入新建 seed、编辑器和编译器；新类型需要专门内容校验时由对应解析器处理。
 4. 通过 `sourcePathOf` 构建路径，禁止重新拼一套分类目录或按裸名字建立跨类型索引。
 5. 若增加的是视图，明确它是否属于共享组织、是否筛选资源、是否只读，不能伪装成能落盘的新文件类型。

@@ -62,7 +62,7 @@
 - 不要用中文 label 当分发键；用稳定 `id`。
 - 不要把会话令牌写入状态栏或活动文案。
 
-应用工作区 ID 与资源分类分开：剧本为 `stageplay`，游戏性为 `gameplay`，皮肤管理器为 `mc-skin`。对应入口是 `StageplayWorkspace.tsx`、`GameplayWorkspace.tsx`，游戏性编辑器位于 `src/workspaces/gameplay/`；资源目录 `src/script`、`src/quest` 和 `.quest` 格式不因此改名。
+应用工作区 ID 与资源分类分开：剧本为 `stageplay`，游戏性为 `gameplay`，视听效果为 `audiovisual`，皮肤管理器为 `mc-skin`。对应入口是 `StageplayWorkspace.tsx`、`GameplayWorkspace.tsx`、`AudiovisualWorkspace.tsx`；游戏性编辑器位于 `src/workspaces/gameplay/`，视听效果位于 `src/workspaces/audiovisual/`；资源目录 `src/script`、`src/quest`、`src/bossbars` 和 `.quest` / `.bossbar` 格式不因此改名。
 
 
 ## 游戏性文件页签

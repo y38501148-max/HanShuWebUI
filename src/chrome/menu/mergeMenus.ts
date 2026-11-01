@@ -1,5 +1,6 @@
 import type { AppWorkspaceId } from '../../workspaces/types'
 import { globalMenuContribution } from './globalMenus'
+import { audiovisualMenuContribution } from './audiovisualMenus'
 import { gameplayMenuContribution } from './gameplayMenus'
 import { stageplayMenuContribution } from './stageplayMenus'
 import type { MenuCommand, MenuContribution, MenuDef, MenuEntry } from './types'
@@ -9,6 +10,7 @@ const MENU_ORDER = ['file', 'edit', 'select', 'view', 'go', 'help'] as const
 const WORKSPACE_CONTRIBUTIONS: Partial<Record<AppWorkspaceId, MenuContribution>> = {
   stageplay: stageplayMenuContribution,
   gameplay: gameplayMenuContribution,
+  audiovisual: audiovisualMenuContribution,
 }
 
 function itemsOf(contribution: MenuContribution, menuId: string): MenuEntry[] {

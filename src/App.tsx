@@ -13,6 +13,7 @@ import {
 } from './workspaces/activeWorkspace.ts'
 import { APP_WORKSPACES } from './workspaces/registry.ts'
 import { McSkinWorkspace } from './workspaces/McSkinWorkspace.tsx'
+import { AudiovisualWorkspace, type AudiovisualWorkspaceHandle } from './workspaces/AudiovisualWorkspace.tsx'
 import { GameplayWorkspace, type GameplayWorkspaceHandle } from './workspaces/GameplayWorkspace.tsx'
 import { StageplayWorkspace } from './workspaces/StageplayWorkspace.tsx'
 import {
@@ -65,10 +66,13 @@ function renderToolWorkspace(
   id: AppWorkspaceId,
   active: boolean,
   gameplayRef: Ref<GameplayWorkspaceHandle>,
+  audiovisualRef: Ref<AudiovisualWorkspaceHandle>,
 ) {
   switch (id) {
     case 'gameplay':
       return <GameplayWorkspace active={active} workspaceRef={gameplayRef} />
+    case 'audiovisual':
+      return <AudiovisualWorkspace active={active} workspaceRef={audiovisualRef} />
     case 'mc-skin':
       return <McSkinWorkspace active={active} />
     default:
@@ -100,6 +104,7 @@ function App() {
   const splashPreview = !isDesktopShell
   const stageplayRef = useRef<StageplayWorkspaceHandle>(null)
   const gameplayRef = useRef<GameplayWorkspaceHandle>(null)
+  const audiovisualRef = useRef<AudiovisualWorkspaceHandle>(null)
 
   useEffect(() => {
     applyUiScale(uiScale)
@@ -219,6 +224,10 @@ function App() {
         gameplayRef.current?.handleMenuAction(item.id)
         return
       }
+      if (activeWorkspaceId === 'audiovisual') {
+        audiovisualRef.current?.handleMenuAction(item.id)
+        return
+      }
       if (activeWorkspaceId === 'stageplay') {
         stageplayRef.current?.handleMenuAction(item.id)
       }
@@ -313,7 +322,7 @@ function App() {
               activeWorkspaceId === ws.id ? ' active' : ''
             }`}
           >
-            {renderToolWorkspace(ws.id, activeWorkspaceId === ws.id, gameplayRef)}
+            {renderToolWorkspace(ws.id, activeWorkspaceId === ws.id, gameplayRef, audiovisualRef)}
           </div>
         ))}
       </div>

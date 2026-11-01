@@ -25,6 +25,7 @@ import tnbtJson from './docs/tnbt-json.md?raw'
 import itemGuide from './docs/item-guide.md?raw'
 import gameDevServer from './docs/game-dev-server.md?raw'
 import gameplayWorkspace from './docs/gameplay-workspace.md?raw'
+import audiovisualWorkspace from './docs/audiovisual-workspace.md?raw'
 import levelGuide from './docs/level-guide.md?raw'
 import progressFlowModel from './docs/progress-flow-model.md?raw'
 import progressNodeGraph from './docs/progress-node-graph.md?raw'
@@ -64,6 +65,7 @@ export type HelpTopicId =
   | 'tnbt-json'
   | 'game-dev-server'
   | 'gameplay-workspace'
+  | 'audiovisual-workspace'
   | 'level-guide'
   | 'progress-flow-model'
   | 'progress-node-graph'
@@ -203,6 +205,14 @@ export const HELP_TOPICS: HelpTopic[] = [
     audience: 'both',
     inDocs: true,
     body: gameplayWorkspace,
+  },
+  {
+    id: 'audiovisual-workspace',
+    title: '视听效果工作区',
+    group: '视听效果',
+    audience: 'both',
+    inDocs: true,
+    body: audiovisualWorkspace,
   },
   {
     id: 'level-guide',

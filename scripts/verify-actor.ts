@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import JSZip from 'jszip'
 import { createActor, parseActor, stringifyActor } from '../src/workspaces/gameplay/actor'
+import { createItem, stringifyItem } from '../src/workspaces/gameplay/itemDoc'
 import { SCRIPT_TYPES, scriptTemplate } from '../src/scriptResources'
 import { sourcePathOf, type Workspace } from '../src/workspace'
 import { sourcesToProgressDocuments, applyProgressDocumentsToWorkspace } from '../src/project/projectSession'
@@ -17,6 +18,16 @@ const doc = {
   freezeAi: true,
   display: { mode: 'set' as const, title: '&a卫兵', subtitle: '&7东门' },
   reputation: { mode: 'set' as const, id: 'village_guard' },
+  loot: {
+    xp: { mode: 'giveXp' as const, amount: 25 },
+    item: {
+      leave: false,
+      items: [
+        { item: 'kit_blade', id: '', count: 1, components: {}, chance: 0.35, playerKill: true },
+        { id: 'minecraft:emerald', count: 2, components: {}, chance: 1, playerKill: false },
+      ],
+    },
+  },
   dialogue: {
     talkId: '卫兵',
     playerRole: '玩家',
@@ -29,8 +40,15 @@ const doc = {
 }
 assert.deepEqual(parseActor(stringifyActor(doc)), { ...doc, tags: ['guard'] })
 assert.equal(stringifyActor(createActor()).includes('display'), false)
+assert.equal(stringifyActor(createActor()).includes('loot'), false)
 assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), display: { mode: 'clear' } })).display, { mode: 'clear' })
 assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), reputation: { mode: 'leave' } })).reputation, { mode: 'leave' })
+assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), loot: {} })).loot, {})
+assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), loot: { xp: { mode: 'leave' } } })).loot, { xp: { mode: 'leave' } })
+assert.deepEqual(parseActor(JSON.stringify({
+  ...createActor(),
+  loot: { item: { items: [{ item: 'kit_blade' }] } },
+})).loot, { item: { leave: true, items: [{ item: 'kit_blade', id: '', count: 1, components: {}, chance: 1, playerKill: false }] } })
 for (const bad of [
   { scripts: ['x', 'x'] },
   { scripts: ['../x'] },
@@ -47,9 +65,17 @@ for (const bad of [
   { reputation: 'village_guard' },
   { reputation: { mode: 'set' } },
   { reputation: { mode: 'clear', id: 'x' } },
+  { loot: { xp: { mode: 'giveXp' } } },
+  { loot: { xp: { mode: 'leave', amount: 1 } } },
+  { loot: { xp: { mode: 'dropXp', amount: -1 } } },
+  { loot: { item: { leave: 'yes' } } },
+  { loot: { item: { items: [{ item: 'a', id: 'minecraft:stick' }] } } },
+  { loot: { item: { items: [{ id: 'minecraft:stick', chance: 2 }] } } },
+  { loot: { bonus: true } },
 ]) assert.throws(() => parseActor(JSON.stringify({ ...createActor(), ...bad })))
 assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), display: null })).display, null)
 assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), reputation: null })).reputation, null)
+assert.deepEqual(parseActor(JSON.stringify({ ...createActor(), loot: null })).loot, null)
 
 const scripts = [
   { id: 'template', name: 'village.actor', content: stringifyActor(doc), updatedAt: 1 },
@@ -62,12 +88,14 @@ const scripts = [
     format: 'hanshu.shop', version: 1, id: 'village-shop', name: 'name', tags: [], icon: null,
     stockSubject: 'infinite', visibility: [], availability: [], params: [], modifiers: [], script: [], entries: [],
   }, null, 2), updatedAt: 1 },
+  { id: 'blade', name: 'kit_blade.item', content: stringifyItem(createItem('minecraft:iron_sword')), updatedAt: 1 },
   { id: 'hs', name: 'town.hs', content: '@village_intro\n卫兵:你好//\n@village_idle\n卫兵:路过//\n', updatedAt: 1 },
   ...['guard', 'watch'].map(id => ({ id, name: `${id}.py`, srcKind: 'actor' as const, content: scriptTemplate('actor', 'default.py', id), updatedAt: 1 })),
 ]
 assert.equal(sourcePathOf(scripts[0]), 'src/actors/village.actor')
 assert.equal(sourcePathOf(scripts[1]), 'src/reputations/village_guard.rep')
-assert.equal(sourcePathOf(scripts[4]), 'src/script/actor/guard.py')
+assert.equal(sourcePathOf(scripts[3]), 'src/items/kit_blade.item')
+assert.equal(sourcePathOf(scripts[5]), 'src/script/actor/guard.py')
 const workspace: Workspace = { packages: [{ id: 'p', name: 'actors', collapsed: false, scripts, assets: [], assetFolders: [] }], activeScriptId: null, activeAssetId: null }
 const state = ensurePackageSections({ documents: sourcesToProgressDocuments(scripts), folders: [], activeKey: null })
 assert.equal(state.documents.find(d => d.name.endsWith('.actor'))?.package, 'actor')

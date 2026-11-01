@@ -11,6 +11,16 @@
   "freezeAi": true,
   "display": { "mode": "set", "title": "&a卫兵", "subtitle": "&7东门" },
   "reputation": { "mode": "set", "id": "village_guard" },
+  "loot": {
+    "xp": { "mode": "giveXp", "amount": 25 },
+    "item": {
+      "leave": false,
+      "items": [
+        { "item": "kit_blade", "count": 1, "chance": 0.35, "playerKill": true },
+        { "id": "minecraft:emerald", "count": 2, "chance": 1.0 }
+      ]
+    }
+  },
   "dialogue": {
     "talkId": "卫兵",
     "playerRole": "玩家",
@@ -26,9 +36,22 @@
 ## 字段
 
 - **必填**：`format` / `version` / `scripts` / `tags` / `freezeAi`
-- **可选**（可省略或 `null`；未知键拒载）：`display` / `reputation` / `dialogue` / `interactService`
+- **可选**（可省略或 `null`；未知键拒载）：`display` / `reputation` / `loot` / `dialogue` / `interactService`
 
 `scripts` 是有序、不重复的演员脚本 ID，对应 `src/script/actor/<ID>.py`。表单可选择脚本、调整顺序、打开脚本及移除绑定；未解析引用会显示缺失并阻止 PAK 导出。标签去重保序。`freezeAi` 软冻结原版 Goal/Brain，保留 navigation/control；它不控制脚本是否运行。
+
+### 死亡掉落（`loot`）
+
+有绑定时即生效，**不**要求脚本会话。时序：原版算出 → **套用模板** → 脚本 `loot`／`lootXp`。经验轴与物品轴独立；整键或子键省略／`null` 等同该侧 leave（跟原版）。
+
+| 字段 | 含义 |
+| --- | --- |
+| `xp` | 对象或省略／`null`。有对象时 **`mode` 必填**：`leave`｜`dropXp`｜`giveXp`｜`giveLv` |
+| `xp.amount` | 非 `leave` 必填且 `>= 0`；`leave` 禁止带 amount。非 leave **替换**原版 XP，且需玩家击杀信用 |
+| `item.leave` | 默认 `true`；`false` 先清空本次掉落集合再掷自定义行 |
+| `item.items[]` | 可省略（默认 `[]`）；形态同 kit（`item` 链接或 `id`+`components`）；`count` 默认 1；`chance` 默认 1（`[0,1]`）；`playerKill` 默认 `false` |
+
+`died` 若被脚本 `cancel`，模板掉落与 `loot`／`lootXp` 都不会触发。`giveXp`／`giveLv` 在 hook 之后入账，脚本 `cancel` 可否决。
 
 ### 显示与声誉副作用
 
@@ -66,9 +89,9 @@
 
 ## Hook 与调度
 
-支持的 hook：`init`、`aistep`、`tick`、`join`、`leave`、`remove`、`hurt`、`attack`、`died`、`kill`、`interact`、`target`、`dimension`、`heal`、`effect`、`collide`、`ridden`、`leash`。
+支持的 hook：`init`、`aistep`、`tick`、`join`、`leave`、`remove`、`hurt`、`attack`、`died`、`loot`、`lootXp`、`kill`、`interact`、`target`、`dimension`、`heal`、`effect`、`collide`、`ridden`、`leash`。
 
-除 init 发给全体外，仅 running 脚本接收 hook。可取消的类型为 hurt、attack、died、interact、dimension、heal、effect、ridden；`event.cancel()` 会短路同事件的后续处理。`@hook(name, cancellable=...)` 的可选声明必须与宿主注册一致，通常省略即可。
+除 init 发给全体外，仅 running 脚本接收 hook。可取消的类型为 hurt、attack、died、loot、lootXp、interact、dimension、heal、effect、ridden；`event.cancel()` 会短路同事件的后续处理。`@hook(name, cancellable=...)` 的可选声明必须与宿主注册一致，通常省略即可。
 
 处理函数接收 `(event, blackboard)`。黑板在同一实例会话的多个脚本之间共享，不能把实例状态放进模块全局变量；会话结束后不持久化。`event.api()` 提供 `state(id)`、`suspend(id)`、`resume(id)`、`sleep(id, ticks)`、`call(id, func_name, *args)`。call 向目标函数传 `(event, blackboard, *args)`，不改变激活态；sleep 到期仅恢复 running。init 完成前禁止调度与 call。
 

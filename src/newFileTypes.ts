@@ -80,9 +80,7 @@ export type NewFileTypeId =
   | "py-goal"
   | "py-kit"
   | "py-shop"
-  | "py-item"
   | "py-actor"
-  | "py-enchantment"
   | "py-player"
   | "progress"
   | "hflow"
@@ -280,7 +278,7 @@ export const NEW_FILE_TYPES: readonly NewFileType[] = [
     srcKind: type,
     seed: (base: string) => scriptTemplate(type, "default.py", base.trim()),
   })),
-  { id: "actor", ext: ".actor", label: "演员模板", hint: "演员脚本、标签、显示、对话、服务与声誉成员（src/actors）", icon: "actor", group: "gameplay", defaultBase: "新演员", seed: () => stringifyActor(createActor()) },
+  { id: "actor", ext: ".actor", label: "演员模板", hint: "演员脚本、标签、显示、掉落、对话、服务与声誉成员（src/actors）", icon: "actor", group: "gameplay", defaultBase: "新演员", seed: () => stringifyActor(createActor()) },
   { id: "rep", ext: ".rep", label: "声誉阵营", hint: "点数阈值、敌对关系与旗帜（src/reputations）", icon: "reputation", group: "gameplay", defaultBase: "新阵营", seed: () => stringifyReputation(createReputation()) },
   {
     id: "shop",

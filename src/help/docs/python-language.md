@@ -4,7 +4,7 @@
 
 ## 环境与隔离
 
-编辑器传入脚本类型。`profiles.ts` 是宿主注入能力的集中定义：common 无礼包全局变量；goal 提供现有目标 SDK 的装饰器、BaseGoalPy、st/cfg；kit 提供 kit/player/players/random；shop 提供 shop/player，支持模板参数、修饰器、条件和条目额度暂存句柄；actor 注入 `hook` 和 `Blackboard`，hook 名由游戏 `python.actorHooks` 注册表快照生成 Literal 联合类型，支持新增类型的字符串补全与无效名称诊断；ActorEvent / ActorScriptApi 来自游戏反射。item/enchantment/player 只提供普通 Python 和按需 Java 类型，宿主未实现前不虚构对应 API。
+编辑器传入脚本类型。`profiles.ts` 是宿主注入能力的集中定义：common 无礼包全局变量；goal 提供现有目标 SDK 的装饰器、BaseGoalPy、st/cfg；kit 提供 kit/player/players/random；shop 提供 shop/player，支持模板参数、修饰器、条件和条目额度暂存句柄；actor 注入 `hook` 和 `Blackboard`，hook 名由游戏 `python.actorHooks` 注册表快照生成 Literal 联合类型，支持新增类型的字符串补全与无效名称诊断；ActorEvent / ActorScriptApi 来自游戏反射。player 只提供普通 Python 和按需 Java 类型，宿主未实现前不虚构对应 API。
 
 Worker 按「工程连接实例＋脚本类型」共享，同一环境多个编辑器复用，不跨工程或类型泄漏注入变量。每个视图拥有独立 LSP 文档，使用工程的有效资源和当前草稿填充虚拟 project/<类型>/；补全可读取 common 库的未打开源文件。内置覆盖规则与导出相同。
 

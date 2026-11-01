@@ -101,7 +101,13 @@ import {
   stripLibraryTables,
   uniqueDocumentName,
   withLibraryTables,
+  withScriptLoadViews,
+  isScriptLoadDocumentKey,
+  scriptLoadTypeOfKey,
+  scriptLoadPath,
+  scriptLoadLabel,
 } from "./gameplay/library";
+import { ScriptLoadEditor } from "./gameplay/ScriptLoadEditor";
 import {
   normalizeQuestFileName,
   questAuthorKindFromSource,
@@ -192,6 +198,8 @@ import {
 } from "./gameplay/progressLocale";
 import {
   applyProgressDocumentsToWorkspace,
+  progressDocumentMatchesSource,
+  progressSourceIdForDocument,
   getProjectSession,
   isProgressSourceName,
   loadProgressUiState,
@@ -296,9 +304,9 @@ export function GameplayWorkspace({
       }),
     [documents, ui, session.workspace],
   );
-  /** 先叠虚拟内置文档 / 物品库表视图，再清理页条——否则虚拟页会被当成失效键清掉 */
+  /** 先叠虚拟内置文档 / 启动列表 / 物品库表视图，再清理页条——否则虚拟页会被当成失效键清掉 */
   const state = useMemo(
-    () => normalizeGroups(withLibraryTables(withBuiltinScripts(baseState))),
+    () => normalizeGroups(withLibraryTables(withScriptLoadViews(withBuiltinScripts(baseState)))),
     [baseState],
   );
   const stateRef = useRef(state);
@@ -376,7 +384,9 @@ export function GameplayWorkspace({
           ]
         : [];
     const renames = next.documents.flatMap((doc) => {
-      const old = prevScripts.find((script) => script.id === doc.key);
+      // 启动列表虚入口键 ≠ source:…/load.json，必须走 progressDocumentMatchesSource
+      if (isScriptLoadDocumentKey(doc.key)) return [];
+      const old = prevScripts.find((script) => progressDocumentMatchesSource(doc, script));
       if (!old) return [];
       const srcKind = doc.name.toLowerCase().endsWith(".py")
         ? scriptTypeInFolder(next, doc.folderId ?? null)
@@ -389,7 +399,7 @@ export function GameplayWorkspace({
     const removed = prevScripts.filter(
       (script) =>
         isProgressSourceName(script.name) &&
-        !next.documents.some((doc) => doc.key === script.id),
+        !next.documents.some((doc) => progressDocumentMatchesSource(doc, script)),
     );
     const applyUi = (workspace: typeof live.workspace) => {
       const nextUi = {
@@ -412,13 +422,13 @@ export function GameplayWorkspace({
           : organization;
       const projected = next.documents.flatMap((doc) => {
         if (!structuralPendingRef.current) return [doc];
+        const matchSource = (source: (typeof currentSources)[number]) =>
+          progressDocumentMatchesSource(doc, source);
         if (structuralIds.has(doc.key)) {
-          const current = currentSources.find(
-            (source) => source.id === doc.key,
-          );
+          const current = currentSources.find(matchSource);
           return [{ ...doc, source: current?.content ?? doc.source }];
         }
-        const current = currentSources.find((source) => source.id === doc.key);
+        const current = currentSources.find(matchSource);
         return current
           ? [
               {
@@ -438,7 +448,7 @@ export function GameplayWorkspace({
         );
         for (const doc of additions)
           if (
-            !removedIds.has(doc.key) &&
+            !removedIds.has(progressSourceIdForDocument(doc)) &&
             !projected.some((item) => item.key === doc.key)
           )
             projected.push(doc);
@@ -686,11 +696,12 @@ export function GameplayWorkspace({
   const progressPath =
     progressDoc && doc ? sourcePathOf({ name: doc.name }) : null;
   const progressEditable = !!progressPath && !!client?.writable;
+  const scriptLoadType = doc ? scriptLoadTypeOfKey(doc.key) : null;
   const presenceSource =
     doc && !isBuiltinScriptDocumentKey(doc.key) && !isLibraryTableKey(doc.key)
       ? session.workspace.packages
           .flatMap((pkg) => pkg.scripts)
-          .find((script) => script.id === doc.key)
+          .find((script) => progressDocumentMatchesSource(doc, script))
       : null;
   const presencePath =
     presenceSource && !presenceSource.detached
@@ -1745,6 +1756,11 @@ export function GameplayWorkspace({
     if (locked || busy) return;
     const item = state.documents.find((d) => d.key === key);
     if (!item) return;
+    if (isScriptLoadDocumentKey(item.key)) {
+      downloadFlowFile("load.json", item.source);
+      setNotice(`已下载${scriptLoadLabel(scriptLoadTypeOfKey(item.key)!)}。`);
+      return;
+    }
     if (
       item.package === "actor" ||
       item.package === "shop" ||
@@ -1860,7 +1876,7 @@ export function GameplayWorkspace({
     folders: string[];
   }) {
     const docs = documentKeys.filter(
-      (key) => !isBuiltinScriptDocumentKey(key) && !isLibraryTableKey(key),
+      (key) => !isBuiltinScriptDocumentKey(key) && !isLibraryTableKey(key) && !isScriptLoadDocumentKey(key),
     );
     const foldersToRemove = folderKeys.filter(
       (key) =>
@@ -2077,6 +2093,7 @@ export function GameplayWorkspace({
     const paneLevel = isLevelDocument(paneDoc);
     const paneEntityTable = isEntityLibraryTableKey(paneDoc.key);
     const paneItemTable = isItemLibraryTableKey(paneDoc.key);
+    const paneScriptLoad = scriptLoadTypeOfKey(paneDoc.key);
     const paneEntity = isEntityDocument(paneDoc);
     const paneItem = isItemDocument(paneDoc);
     const paneKitParsed = paneKit ? readKitSource(paneDoc.source) : null;
@@ -2102,7 +2119,8 @@ export function GameplayWorkspace({
       !paneItem &&
       !paneEntity &&
       !paneItemTable &&
-      !paneEntityTable
+      !paneEntityTable &&
+      !paneScriptLoad
     ) {
       // 焦点文档复用 memo 过的 parse，避免父级重渲染换掉 flow 引用打断拖拽
       if (paneDoc.key === focusedKey && parsed.flow) paneFlow = parsed.flow;
@@ -2136,6 +2154,29 @@ export function GameplayWorkspace({
       readOnly ||
       (paneProgress && !graphLive);
 
+    if (paneScriptLoad) {
+      const options = state.documents
+        .filter(d =>
+          d.package === "script" &&
+          d.name.toLowerCase().endsWith(".py") &&
+          scriptTypeInFolder(state, d.folderId ?? null) === paneScriptLoad,
+        )
+        .map(d => ({
+          ref: d.name.replace(/\.py$/i, ""),
+          label: d.name,
+          key: d.key,
+          builtin: isBuiltinScriptDocumentKey(d.key) || Boolean(d.folderId && isBuiltinScriptFolder(d.folderId)),
+        }))
+      return <ScriptLoadEditor
+        key={paneDoc.key}
+        type={paneScriptLoad}
+        source={paneDoc.source}
+        disabled={disabledPane}
+        scriptOptions={options}
+        onChange={source => changeSource(source, false, paneDoc.key)}
+        onOpenScript={key => selectDocument(key)}
+      />
+    }
     if (paneActor) {
       const injectOptions = [...new Map((session.workspace.packages[0]?.scripts ?? [])
         .filter(script => script.name.toLowerCase().endsWith(".hs"))
@@ -2150,6 +2191,7 @@ export function GameplayWorkspace({
         reputationOptions={state.documents.filter(d => d.package === "reputation" && d.name.toLowerCase().endsWith(".rep")).map(d => ({ ref: d.name.replace(/\.rep$/i, ""), label: d.name, key: d.key }))}
         shopOptions={state.documents.filter(d => d.package === "shop" && d.name.toLowerCase().endsWith(".shop")).map(d => ({ ref: d.name.replace(/\.shop$/i, ""), label: d.name, key: d.key }))}
         injectOptions={injectOptions}
+        itemCatalog={itemCatalog}
         onOpenScript={key => selectDocument(key)}
       />
     }
@@ -2807,8 +2849,13 @@ export function GameplayWorkspace({
       const item = docByKey.get(key);
       if (!item) return [];
       const type = scriptTypeInFolder(state, item.folderId ?? null);
-      const kind = isEntityLibraryTableKey(key) ? 'entity' : isItemLibraryTableKey(key) ? 'item' : isSimpleQuestDocument(item) ? 'progress' : isMultiQuestDocument(item) ? 'hflow' : sourceIconKind({ name: item.name, srcKind: type });
-      const tooltip = isLibraryTableKey(key) ? `${item.name} · 表视图` : `${isBuiltinScriptDocumentKey(key) ? '内置 · ' : ''}${sourcePathOf({ name: item.name, srcKind: type })}`;
+      const loadType = scriptLoadTypeOfKey(key);
+      const kind = isEntityLibraryTableKey(key) ? 'entity' : isItemLibraryTableKey(key) ? 'item' : loadType ? 'json' : isSimpleQuestDocument(item) ? 'progress' : isMultiQuestDocument(item) ? 'hflow' : sourceIconKind({ name: item.name, srcKind: type });
+      const tooltip = isLibraryTableKey(key)
+        ? `${item.name} · 表视图`
+        : loadType
+          ? `${scriptLoadLabel(loadType)} · ${scriptLoadPath(loadType)}`
+          : `${isBuiltinScriptDocumentKey(key) ? '内置 · ' : ''}${sourcePathOf({ name: item.name, srcKind: type })}`;
       return [{ id: item.key, title: item.name, tooltip, icon: <span className="editor-dock-file-icon"><ExplorerIcon kind={kind} />{isLibraryTableKey(key) && <small aria-hidden="true">▦</small>}</span> }];
     });
 

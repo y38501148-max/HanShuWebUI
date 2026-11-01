@@ -31,9 +31,7 @@ export const EXPLORER_ICON_KINDS = [
   'goal',
   'script-kit',
   'script-shop',
-  'script-item',
   'script-actor',
-  'script-enchantment',
   'script-player',
   'markdown',
   'lang',
@@ -86,8 +84,6 @@ const PATHS: Record<ExplorerIconKind, string> = {
   // 与 `kit`（礼物盒）刻意分开：物品是"一块宝石"，盒子留给礼包
   'script-kit':'M4 3h12v9H4z M8 6l-2 2 2 2 M12 6l2 2-2 2 M13 16h9v6h-9z M12 13h11v3H12z M17.5 13v9',
   'script-shop':'M3 3h12v9H3z M6 6l-2 2 2 2 M11 6l2 2-2 2 M12 17h11l-1-4h-9z M13 17v6h9v-6',
-  'script-item':'M4 3h12v9H4z M8 6l-2 2 2 2 M12 6l2 2-2 2 M17 13l5 3v5l-5 3-5-3v-5z M12 16l5 3 5-3',
-  'script-enchantment':'M4 3h12v9H4z M8 6l-2 2 2 2 M12 6l2 2-2 2 M18 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z',
   'script-player':'M4 3h12v9H4z M8 6l-2 2 2 2 M12 6l2 2-2 2 M18 17a3 3 0 100-6 3 3 0 000 6z M12 23a6 6 0 0112 0',
   'script-actor':'M4 3h12v9H4z M8 6l-2 2 2 2 M12 6l2 2-2 2 M15 13h6v5h-6z M13 18h10v5H13z',
   item: 'M6 3h12l4 6-10 12L2 9z M2 9h20',
@@ -157,7 +153,7 @@ export function sourceIconKind(file: {
   name: string
   srcKind?: string | null
 }): ExplorerIconKind {
-  if(getExtension(file.name)==='.py'&&['kit','shop','item','actor','enchantment','player'].includes(file.srcKind??''))return `script-${file.srcKind}` as ExplorerIconKind
+  if(getExtension(file.name)==='.py'&&['kit','shop','actor','player'].includes(file.srcKind??''))return `script-${file.srcKind}` as ExplorerIconKind
   if(getExtension(file.name)==='.entity')return 'entity'
   if (getExtension(file.name) === '.py' && file.srcKind === 'goal') return 'goal'
   return fileIconKind(file.name)

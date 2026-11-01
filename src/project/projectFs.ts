@@ -84,6 +84,7 @@ const TEXT_ROOT_DIRS = [
 function isProjectLoadableFile(name: string): boolean {
   if (name === PROJECT_FILE) return false
   if (name.startsWith('.')) return false
+  if (name.trim().toLowerCase() === 'load.json') return true
   return normalizeResourceName(name) !== null
 }
 
@@ -191,7 +192,11 @@ async function readPackageFromDirectory(
   const seen = new Set<string>()
   const addScript = async (name: string, path: string) => {
     assertCanonicalSourcePath(path)
-    if(name.toLowerCase().endsWith('.py')&&!/^src\/script\/(common|goal|kit|shop|item|actor|enchantment|player)\/[^/]+\.py$/i.test(path))throw new Error(`脚本目录需要调整：${path}。请放入 src/script/<common|goal|kit|shop|item|actor|enchantment|player>/。`)
+    if(/^src\/script\/[^/]+\/load\.json$/i.test(path)){
+      if(!/^src\/script\/(common|player)\/load\.json$/i.test(path))throw new Error(`启动列表仅允许 src/script/common/load.json 或 src/script/player/load.json，收到：${path}`)
+    } else if(name.toLowerCase().endsWith('.py')&&!/^src\/script\/(common|goal|kit|shop|actor|player)\/[^/]+\.py$/i.test(path)){
+      throw new Error(`脚本目录需要调整：${path}。请放入 src/script/<common|goal|kit|shop|actor|player>/。`)
+    }
     if (seen.has(resourceNameKey(path))) throw new Error(`存在重名资源路径：${path}`)
     const file = await readFileAtPath(root, path)
     if (!file) return

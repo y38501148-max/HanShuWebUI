@@ -12,7 +12,12 @@ const TITLEBAR_H = 40
 const STATUSBAR_H = 28
 const colors = ['#ac9bda', '#7cbba7', '#d7ac79', '#85afd1', '#c990ac']
 function color(id: string) { let value = 0; for (const ch of id) value = (value * 31 + ch.charCodeAt(0)) >>> 0; return colors[value % colors.length] }
-const fileName = (path: string) => path === '.hanshu/skinmanager/library.json' ? '皮肤库' : path.split('/').at(-1) ?? path
+const fileName = (path: string) => {
+  if (path === '.hanshu/skinmanager/library.json') return '皮肤库'
+  if (/^src\/script\/common\/load\.json$/i.test(path)) return '通用启动列表'
+  if (/^src\/script\/player\/load\.json$/i.test(path)) return '玩家启动列表'
+  return path.split('/').at(-1) ?? path
+}
 function loadPosition(): Position {
   let pos = fitOrb({ x: window.innerWidth - ORB.w - 24, y: window.innerHeight - ORB.h - 48 })
   try {

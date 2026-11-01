@@ -17,8 +17,17 @@ import {
 import { getExtension } from '../workspace'
 import { sourcePathOf } from '../workspace'
 import { assetCacheEpoch } from '../assets/idb'
-import {scriptTypeInFolder} from '../workspaces/gameplay/library'
-import { sectionFolderKey } from '../workspaces/gameplay/library'
+import {
+  isScriptLoadDocumentKey,
+  scriptLoadDocumentKey,
+  scriptLoadPath,
+  scriptLoadTypeOfKey,
+  scriptLoadTypeOfSource,
+  scriptTypeInFolder,
+  sectionFolderKey,
+  scriptLoadLabel,
+} from '../workspaces/gameplay/library'
+import { isScriptLoadFileName } from '../workspace'
 import type {
   FlowDocument,
   FlowFolder,
@@ -100,7 +109,25 @@ export function packageIdOfExt(ext: string): FlowPackageId | null {
 }
 
 export function isProgressSourceName(name: string): boolean {
-  return PROGRESS_SOURCE_EXTS.has(getExtension(name))
+  return PROGRESS_SOURCE_EXTS.has(getExtension(name)) || isScriptLoadFileName(name)
+}
+
+/** 进度文档 ↔ 源文件身份：启动列表虚入口键不等于 `source:…/load.json`。 */
+export function progressSourceIdForDocument(doc: { key: string }): string {
+  const loadType = scriptLoadTypeOfKey(doc.key)
+  return loadType ? `source:${scriptLoadPath(loadType)}` : doc.key
+}
+
+export function progressDocumentMatchesSource(
+  doc: { key: string },
+  source: { id: string; name?: string; srcKind?: string | null },
+): boolean {
+  const loadType = scriptLoadTypeOfKey(doc.key)
+  if (loadType) {
+    return source.id === `source:${scriptLoadPath(loadType)}`
+      || (isScriptLoadFileName(source.name ?? '') && source.srcKind === loadType)
+  }
+  return source.id === doc.key
 }
 
 /** 文档在资源树中的文件夹归属（仅视图；磁盘/lang 仍按文件名扁平）。 */
@@ -112,6 +139,20 @@ export function sourcesToProgressDocuments(
 ): FlowDocument[] {
   const docs: FlowDocument[] = []
   for (const source of sources) {
+    const loadType = scriptLoadTypeOfSource(source)
+    if (loadType) {
+      docs.push(stampDocument({
+        key: scriptLoadDocumentKey(loadType),
+        detached: source.detached,
+        name: scriptLoadLabel(loadType),
+        source: source.content,
+        package: 'script',
+        folderId: sectionFolderKey('script', loadType),
+        createdAt: undefined,
+        updatedAt: new Date(source.updatedAt).toISOString(),
+      }))
+      continue
+    }
     const pkg = packageIdOfExt(getExtension(source.name))
     if (!pkg) continue
     const fromUi = documentFolders?.[source.id]
@@ -156,6 +197,18 @@ export function applyProgressDocumentsToWorkspace(
   const nextSources: SourceFile[] = [
     ...kept,
     ...documents.map((doc) => {
+      const loadType = scriptLoadTypeOfKey(doc.key)
+      if (loadType) {
+        return {
+          id: `source:${scriptLoadPath(loadType)}`,
+          detached: doc.detached,
+          name: 'load.json',
+          content: doc.source,
+          updatedAt: doc.updatedAt ? Date.parse(doc.updatedAt) || Date.now() : Date.now(),
+          srcKind: loadType,
+        }
+      }
+      if (isScriptLoadDocumentKey(doc.key)) return null
       const srcKind=getExtension(doc.name)==='.py'?scriptTypeInFolder(folderState,doc.folderId??null):undefined
       return {
         id: doc.key, detached:doc.detached,
@@ -164,7 +217,7 @@ export function applyProgressDocumentsToWorkspace(
         updatedAt: doc.updatedAt ? Date.parse(doc.updatedAt) || Date.now() : Date.now(),
         ...(srcKind ? { srcKind } : {}),
       }
-    }),
+    }).filter((item): item is SourceFile => item != null),
   ]
   return {
     ...workspace,

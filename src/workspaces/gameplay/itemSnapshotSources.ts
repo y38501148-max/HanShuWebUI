@@ -7,6 +7,7 @@
  * 纯函数：不读写缓存、不发请求，方便单测。
  */
 
+import { parseActor, actorLootRowToKitItem } from './actor'
 import { parseItem } from './itemDoc'
 import { expandKitItem, normalizeItemRef, parseKit, type ItemCatalog, type KitItem } from './kit'
 import { parseShop } from './shop'
@@ -98,6 +99,18 @@ function collectShopDocument(doc: SnapshotDocumentLike, context: SnapshotSourceC
   return collectKitSnapshotItems(items, context.itemCatalog)
 }
 
+/** `.actor` 死亡掉落里的自定义物品行。 */
+function collectActorDocument(doc: SnapshotDocumentLike, context: SnapshotSourceContext): SnapshotSourceItem[] {
+  let actor
+  try {
+    actor = parseActor(doc.source)
+  } catch {
+    return []
+  }
+  const items = (actor.loot?.item?.items ?? []).map(actorLootRowToKitItem)
+  return collectKitSnapshotItems(items, context.itemCatalog)
+}
+
 function collectItemDocument(doc: SnapshotDocumentLike): SnapshotSourceItem[] {
   try {
     const parsed = parseItem(doc.source)
@@ -126,6 +139,7 @@ function collectItemStackDocument(doc: SnapshotDocumentLike): SnapshotSourceItem
  * - `.itemstack` 文档按 ItemStack 解析，display 只当缓存，不参与刷新
  * - `.kit` 只取本文件 items / pools
  * - `.shop` 取所有条目的 payment / goods
+ * - `.actor` 取 `loot.item.items`
  * - 物品库表视图等虚拟文档没有 source，返回空
  */
 export function collectDocumentSnapshotItems(
@@ -137,6 +151,7 @@ export function collectDocumentSnapshotItems(
   if (isItemStackFileName(name)) return collectItemStackDocument(doc)
   if (name.endsWith('.kit') || doc.package === 'gift') return collectKitDocument(doc, context)
   if (name.endsWith('.shop') || doc.package === 'shop') return collectShopDocument(doc, context)
+  if (name.endsWith('.actor') || doc.package === 'actor') return collectActorDocument(doc, context)
   if (name.endsWith('.item') || doc.package === 'items') return collectItemDocument(doc)
   return []
 }

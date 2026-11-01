@@ -3,6 +3,7 @@
  */
 
 import assert from 'node:assert/strict'
+import { createActor, stringifyActor } from '../src/workspaces/gameplay/actor.ts'
 import { createItem, stringifyItem } from '../src/workspaces/gameplay/itemDoc.ts'
 import { createKit, stringifyKit } from '../src/workspaces/gameplay/kit.ts'
 import { createShop, createShopEntry, stringifyShop } from '../src/workspaces/gameplay/shop.ts'
@@ -82,6 +83,25 @@ test('.kit 含链接、内嵌、随机池，按指纹去重且跳过缺失链接
 test('.shop 合并 payment 与 goods 并跨条目去重', () => {
   const items = collectDocumentSnapshotItems(shopDoc, { itemCatalog: catalog })
   assert.deepEqual(items.map((item) => item.id).sort(), ['minecraft:bread', 'minecraft:emerald'])
+})
+
+test('.actor 采集 loot 掉落物并跳过缺失链接', () => {
+  const actor = createActor()
+  actor.loot = {
+    item: {
+      leave: false,
+      items: [
+        { item: '货币', id: '', count: 1, components: {}, chance: 0.5, playerKill: true },
+        { id: 'minecraft:apple', count: 2, components: {}, chance: 1, playerKill: false },
+        { item: '不存在', id: '', count: 1, components: {}, chance: 1, playerKill: false },
+      ],
+    },
+  }
+  const items = collectDocumentSnapshotItems(
+    { name: '卫兵.actor', package: 'actor', source: stringifyActor(actor) },
+    { itemCatalog: catalog },
+  )
+  assert.deepEqual(items.map((item) => item.id).sort(), ['minecraft:apple', 'minecraft:emerald'])
 })
 
 test('.shop 图标参与快照采集并保留物品链接', () => {

@@ -42,6 +42,14 @@ export const actorCompiler: FileCompiler = {
         }
         if (missing.size) throw new Error(`缺少对话注入点：${[...missing].join('、')}`)
       }
+      if (actor.loot?.item) {
+        for (const row of actor.loot.item.items) {
+          if (!row.item) continue
+          if (!ctx.index.package.scripts.some(s => s.name === `${row.item}.item`)) {
+            throw new Error(`缺少掉落物品：${row.item}（src/items/${row.item}.item）`)
+          }
+        }
+      }
       const path = sourcePathOf(file).slice(4)
       if (!/^actors\/[^/\\:]+\.actor$/i.test(path)) throw new Error('演员模板需要扁平文件名')
       return [{ path, bytes: stringifyActor(actor), plane: 'server', packageName: ctx.index.package.name, sourcePath: file.name }]

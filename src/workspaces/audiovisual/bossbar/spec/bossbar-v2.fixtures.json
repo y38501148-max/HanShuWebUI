@@ -1,0 +1,5460 @@
+{
+  "format": "hanshu.bossbar.fixtures",
+  "specVersion": 2,
+  "protocolVersion": 2,
+  "note": "期望值由 WebUI 实现冻结；Java 解析器对拍同一份数据。改实现必须重新生成并 review diff。long 在 JSON 里一律是十进制字符串。",
+  "normalize": [
+    {
+      "name": "minimal-v2",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "document": {
+          "format": "hanshu.bossbar",
+          "version": 2,
+          "id": "hanshu:minimal",
+          "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+          "layout": {
+            "dock": "top-center",
+            "scale": 1,
+            "safeMargin": 8
+          },
+          "variables": {},
+          "components": [
+            {
+              "id": "region",
+              "type": "display_region",
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 320,
+                "height": 40
+              }
+            }
+          ]
+        },
+        "canonical": "{\n  \"format\": \"hanshu.bossbar\",\n  \"version\": 2,\n  \"id\": \"hanshu:minimal\",\n  \"texture\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=\",\n  \"layout\": {\n    \"dock\": \"top-center\",\n    \"scale\": 1,\n    \"safeMargin\": 8\n  },\n  \"variables\": {},\n  \"components\": [\n    {\n      \"id\": \"region\",\n      \"type\": \"display_region\",\n      \"box\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 320,\n        \"height\": 40\n      }\n    }\n  ]\n}\n"
+      }
+    },
+    {
+      "name": "demo-ember-guard",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:ember_guard",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC",
+        "layout": {
+          "dock": "top-center",
+          "scale": 0.5,
+          "safeMargin": 12
+        },
+        "variables": {
+          "health": {
+            "type": "double",
+            "key": "health",
+            "default": 0
+          },
+          "maxHealth": {
+            "type": "double",
+            "key": "max_health",
+            "default": 1
+          },
+          "bossName": {
+            "type": "string",
+            "key": "boss_name",
+            "default": "首领",
+            "maxLength": 64
+          },
+          "targetName": {
+            "type": "string",
+            "key": "target_name",
+            "default": "无",
+            "maxLength": 64
+          },
+          "enraged": {
+            "type": "bool",
+            "key": "enraged",
+            "default": false
+          },
+          "shield": {
+            "type": "long",
+            "key": "shield",
+            "default": "0"
+          },
+          "maxShield": {
+            "type": "long",
+            "key": "max_shield",
+            "default": "100"
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": -384,
+              "y": -36,
+              "width": 768,
+              "height": 72
+            }
+          },
+          {
+            "id": "track",
+            "type": "background",
+            "box": {
+              "x": -288,
+              "y": -8,
+              "width": 636,
+              "height": 20
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch"
+            }
+          },
+          {
+            "id": "emblem",
+            "type": "background",
+            "box": {
+              "x": -364,
+              "y": -32,
+              "width": 60,
+              "height": 60
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 3,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "contain"
+            }
+          },
+          {
+            "id": "health_fill",
+            "type": "bar",
+            "box": {
+              "x": -284,
+              "y": -4,
+              "width": 628,
+              "height": 12
+            },
+            "range": {
+              "value": {
+                "var": "health"
+              },
+              "min": {
+                "type": "double",
+                "value": 0
+              },
+              "max": {
+                "var": "maxHealth"
+              }
+            },
+            "fill": {
+              "kind": "texture",
+              "uv": {
+                "x": 1,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch"
+            },
+            "direction": "left-to-right",
+            "smoothMs": 120,
+            "trail": {
+              "paint": {
+                "kind": "texture",
+                "uv": {
+                  "x": 2,
+                  "y": 0,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "stretch"
+              },
+              "delayMs": 250,
+              "durationMs": 350
+            }
+          },
+          {
+            "id": "shield_fill",
+            "type": "bar",
+            "box": {
+              "x": -284,
+              "y": 16,
+              "width": 628,
+              "height": 4
+            },
+            "range": {
+              "value": {
+                "var": "shield"
+              },
+              "min": {
+                "type": "long",
+                "value": "0"
+              },
+              "max": {
+                "var": "maxShield"
+              }
+            },
+            "fill": {
+              "kind": "texture",
+              "uv": {
+                "x": 2,
+                "y": 1,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch"
+            }
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "box": {
+              "x": -284,
+              "y": -36,
+              "width": 628,
+              "height": 24
+            },
+            "fontSize": 18,
+            "color": "#FFFFFFFF",
+            "align": "center",
+            "verticalAlign": "middle",
+            "shadow": true,
+            "runs": [
+              {
+                "var": "bossName",
+                "format": "string"
+              },
+              {
+                "text": "  目标："
+              },
+              {
+                "var": "targetName",
+                "format": "string"
+              }
+            ]
+          },
+          {
+            "id": "health_text",
+            "type": "text",
+            "box": {
+              "x": -284,
+              "y": -9,
+              "width": 628,
+              "height": 22
+            },
+            "fontSize": 14,
+            "color": "#FFFFFFFF",
+            "align": "center",
+            "verticalAlign": "middle",
+            "shadow": true,
+            "runs": [
+              {
+                "var": "health",
+                "format": "compact",
+                "digits": 1
+              },
+              {
+                "text": "（"
+              },
+              {
+                "ratio": {
+                  "value": {
+                    "var": "health"
+                  },
+                  "min": {
+                    "type": "double",
+                    "value": 0
+                  },
+                  "max": {
+                    "var": "maxHealth"
+                  }
+                },
+                "format": "percent",
+                "digits": 1
+              },
+              {
+                "text": "）"
+              }
+            ]
+          },
+          {
+            "id": "rage_flame",
+            "type": "background",
+            "box": {
+              "x": -276,
+              "y": 23,
+              "width": 608,
+              "height": 8
+            },
+            "visible": {
+              "var": "enraged"
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 1,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch",
+              "animation": {
+                "mode": "loop",
+                "phaseMs": 0,
+                "frames": [
+                  {
+                    "uv": {
+                      "x": 0,
+                      "y": 1,
+                      "width": 1,
+                      "height": 1
+                    },
+                    "durationMs": 100
+                  },
+                  {
+                    "uv": {
+                      "x": 1,
+                      "y": 1,
+                      "width": 1,
+                      "height": 1
+                    },
+                    "durationMs": 100
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "document": {
+          "format": "hanshu.bossbar",
+          "version": 2,
+          "id": "hanshu:ember_guard",
+          "texture": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC",
+          "layout": {
+            "dock": "top-center",
+            "scale": 0.5,
+            "safeMargin": 12
+          },
+          "variables": {
+            "bossName": {
+              "type": "string",
+              "key": "boss_name",
+              "default": "首领",
+              "maxLength": 64
+            },
+            "enraged": {
+              "type": "bool",
+              "key": "enraged",
+              "default": false
+            },
+            "health": {
+              "type": "double",
+              "key": "health",
+              "default": 0
+            },
+            "maxHealth": {
+              "type": "double",
+              "key": "max_health",
+              "default": 1
+            },
+            "maxShield": {
+              "type": "long",
+              "key": "max_shield",
+              "default": "100"
+            },
+            "shield": {
+              "type": "long",
+              "key": "shield",
+              "default": "0"
+            },
+            "targetName": {
+              "type": "string",
+              "key": "target_name",
+              "default": "无",
+              "maxLength": 64
+            }
+          },
+          "components": [
+            {
+              "id": "region",
+              "type": "display_region",
+              "box": {
+                "x": -384,
+                "y": -36,
+                "width": 768,
+                "height": 72
+              }
+            },
+            {
+              "id": "track",
+              "type": "background",
+              "box": {
+                "x": -288,
+                "y": -8,
+                "width": 636,
+                "height": 20
+              },
+              "visible": true,
+              "opacity": 1,
+              "paint": {
+                "kind": "texture",
+                "uv": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "stretch"
+              }
+            },
+            {
+              "id": "emblem",
+              "type": "background",
+              "box": {
+                "x": -364,
+                "y": -32,
+                "width": 60,
+                "height": 60
+              },
+              "visible": true,
+              "opacity": 1,
+              "paint": {
+                "kind": "texture",
+                "uv": {
+                  "x": 3,
+                  "y": 0,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "contain"
+              }
+            },
+            {
+              "id": "health_fill",
+              "type": "bar",
+              "box": {
+                "x": -284,
+                "y": -4,
+                "width": 628,
+                "height": 12
+              },
+              "visible": true,
+              "opacity": 1,
+              "range": {
+                "value": {
+                  "var": "health"
+                },
+                "min": {
+                  "type": "double",
+                  "value": 0
+                },
+                "max": {
+                  "var": "maxHealth"
+                }
+              },
+              "direction": "left-to-right",
+              "fill": {
+                "kind": "texture",
+                "uv": {
+                  "x": 1,
+                  "y": 0,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "stretch"
+              },
+              "trail": {
+                "paint": {
+                  "kind": "texture",
+                  "uv": {
+                    "x": 2,
+                    "y": 0,
+                    "width": 1,
+                    "height": 1
+                  },
+                  "fit": "stretch"
+                },
+                "delayMs": 250,
+                "durationMs": 350
+              },
+              "smoothMs": 120
+            },
+            {
+              "id": "shield_fill",
+              "type": "bar",
+              "box": {
+                "x": -284,
+                "y": 16,
+                "width": 628,
+                "height": 4
+              },
+              "visible": true,
+              "opacity": 1,
+              "range": {
+                "value": {
+                  "var": "shield"
+                },
+                "min": {
+                  "type": "long",
+                  "value": "0"
+                },
+                "max": {
+                  "var": "maxShield"
+                }
+              },
+              "direction": "left-to-right",
+              "fill": {
+                "kind": "texture",
+                "uv": {
+                  "x": 2,
+                  "y": 1,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "stretch"
+              },
+              "smoothMs": 120
+            },
+            {
+              "id": "title",
+              "type": "text",
+              "box": {
+                "x": -284,
+                "y": -36,
+                "width": 628,
+                "height": 24
+              },
+              "visible": true,
+              "opacity": 1,
+              "runs": [
+                {
+                  "var": "bossName",
+                  "format": "string",
+                  "digits": 0
+                },
+                {
+                  "text": "  目标："
+                },
+                {
+                  "var": "targetName",
+                  "format": "string",
+                  "digits": 0
+                }
+              ],
+              "fontSize": 18,
+              "color": "#FFFFFFFF",
+              "align": "center",
+              "verticalAlign": "middle",
+              "shadow": true
+            },
+            {
+              "id": "health_text",
+              "type": "text",
+              "box": {
+                "x": -284,
+                "y": -9,
+                "width": 628,
+                "height": 22
+              },
+              "visible": true,
+              "opacity": 1,
+              "runs": [
+                {
+                  "var": "health",
+                  "format": "compact",
+                  "digits": 1
+                },
+                {
+                  "text": "（"
+                },
+                {
+                  "ratio": {
+                    "value": {
+                      "var": "health"
+                    },
+                    "min": {
+                      "type": "double",
+                      "value": 0
+                    },
+                    "max": {
+                      "var": "maxHealth"
+                    }
+                  },
+                  "format": "percent",
+                  "digits": 1
+                },
+                {
+                  "text": "）"
+                }
+              ],
+              "fontSize": 14,
+              "color": "#FFFFFFFF",
+              "align": "center",
+              "verticalAlign": "middle",
+              "shadow": true
+            },
+            {
+              "id": "rage_flame",
+              "type": "background",
+              "box": {
+                "x": -276,
+                "y": 23,
+                "width": 608,
+                "height": 8
+              },
+              "visible": {
+                "var": "enraged"
+              },
+              "opacity": 1,
+              "paint": {
+                "kind": "texture",
+                "uv": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 1,
+                  "height": 1
+                },
+                "fit": "stretch",
+                "animation": {
+                  "mode": "loop",
+                  "phaseMs": 0,
+                  "frames": [
+                    {
+                      "uv": {
+                        "x": 0,
+                        "y": 1,
+                        "width": 1,
+                        "height": 1
+                      },
+                      "durationMs": 100
+                    },
+                    {
+                      "uv": {
+                        "x": 1,
+                        "y": 1,
+                        "width": 1,
+                        "height": 1
+                      },
+                      "durationMs": 100
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "canonical": "{\n  \"format\": \"hanshu.bossbar\",\n  \"version\": 2,\n  \"id\": \"hanshu:ember_guard\",\n  \"texture\": \"iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC\",\n  \"layout\": {\n    \"dock\": \"top-center\",\n    \"scale\": 0.5,\n    \"safeMargin\": 12\n  },\n  \"variables\": {\n    \"bossName\": {\n      \"type\": \"string\",\n      \"key\": \"boss_name\",\n      \"default\": \"首领\",\n      \"maxLength\": 64\n    },\n    \"enraged\": {\n      \"type\": \"bool\",\n      \"key\": \"enraged\",\n      \"default\": false\n    },\n    \"health\": {\n      \"type\": \"double\",\n      \"key\": \"health\",\n      \"default\": 0\n    },\n    \"maxHealth\": {\n      \"type\": \"double\",\n      \"key\": \"max_health\",\n      \"default\": 1\n    },\n    \"maxShield\": {\n      \"type\": \"long\",\n      \"key\": \"max_shield\",\n      \"default\": \"100\"\n    },\n    \"shield\": {\n      \"type\": \"long\",\n      \"key\": \"shield\",\n      \"default\": \"0\"\n    },\n    \"targetName\": {\n      \"type\": \"string\",\n      \"key\": \"target_name\",\n      \"default\": \"无\",\n      \"maxLength\": 64\n    }\n  },\n  \"components\": [\n    {\n      \"id\": \"region\",\n      \"type\": \"display_region\",\n      \"box\": {\n        \"x\": -384,\n        \"y\": -36,\n        \"width\": 768,\n        \"height\": 72\n      }\n    },\n    {\n      \"id\": \"track\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -288,\n        \"y\": -8,\n        \"width\": 636,\n        \"height\": 20\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 0,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      }\n    },\n    {\n      \"id\": \"emblem\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -364,\n        \"y\": -32,\n        \"width\": 60,\n        \"height\": 60\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 3,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"contain\"\n      }\n    },\n    {\n      \"id\": \"health_fill\",\n      \"type\": \"bar\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -4,\n        \"width\": 628,\n        \"height\": 12\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"range\": {\n        \"value\": {\n          \"var\": \"health\"\n        },\n        \"min\": {\n          \"type\": \"double\",\n          \"value\": 0\n        },\n        \"max\": {\n          \"var\": \"maxHealth\"\n        }\n      },\n      \"direction\": \"left-to-right\",\n      \"fill\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 1,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      },\n      \"trail\": {\n        \"paint\": {\n          \"kind\": \"texture\",\n          \"uv\": {\n            \"x\": 2,\n            \"y\": 0,\n            \"width\": 1,\n            \"height\": 1\n          },\n          \"fit\": \"stretch\"\n        },\n        \"delayMs\": 250,\n        \"durationMs\": 350\n      },\n      \"smoothMs\": 120\n    },\n    {\n      \"id\": \"shield_fill\",\n      \"type\": \"bar\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": 16,\n        \"width\": 628,\n        \"height\": 4\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"range\": {\n        \"value\": {\n          \"var\": \"shield\"\n        },\n        \"min\": {\n          \"type\": \"long\",\n          \"value\": \"0\"\n        },\n        \"max\": {\n          \"var\": \"maxShield\"\n        }\n      },\n      \"direction\": \"left-to-right\",\n      \"fill\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 2,\n          \"y\": 1,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      },\n      \"smoothMs\": 120\n    },\n    {\n      \"id\": \"title\",\n      \"type\": \"text\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -36,\n        \"width\": 628,\n        \"height\": 24\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"runs\": [\n        {\n          \"var\": \"bossName\",\n          \"format\": \"string\",\n          \"digits\": 0\n        },\n        {\n          \"text\": \"  目标：\"\n        },\n        {\n          \"var\": \"targetName\",\n          \"format\": \"string\",\n          \"digits\": 0\n        }\n      ],\n      \"fontSize\": 18,\n      \"color\": \"#FFFFFFFF\",\n      \"align\": \"center\",\n      \"verticalAlign\": \"middle\",\n      \"shadow\": true\n    },\n    {\n      \"id\": \"health_text\",\n      \"type\": \"text\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -9,\n        \"width\": 628,\n        \"height\": 22\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"runs\": [\n        {\n          \"var\": \"health\",\n          \"format\": \"compact\",\n          \"digits\": 1\n        },\n        {\n          \"text\": \"（\"\n        },\n        {\n          \"ratio\": {\n            \"value\": {\n              \"var\": \"health\"\n            },\n            \"min\": {\n              \"type\": \"double\",\n              \"value\": 0\n            },\n            \"max\": {\n              \"var\": \"maxHealth\"\n            }\n          },\n          \"format\": \"percent\",\n          \"digits\": 1\n        },\n        {\n          \"text\": \"）\"\n        }\n      ],\n      \"fontSize\": 14,\n      \"color\": \"#FFFFFFFF\",\n      \"align\": \"center\",\n      \"verticalAlign\": \"middle\",\n      \"shadow\": true\n    },\n    {\n      \"id\": \"rage_flame\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -276,\n        \"y\": 23,\n        \"width\": 608,\n        \"height\": 8\n      },\n      \"visible\": {\n        \"var\": \"enraged\"\n      },\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 0,\n          \"y\": 1,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\",\n        \"animation\": {\n          \"mode\": \"loop\",\n          \"phaseMs\": 0,\n          \"frames\": [\n            {\n              \"uv\": {\n                \"x\": 0,\n                \"y\": 1,\n                \"width\": 1,\n                \"height\": 1\n              },\n              \"durationMs\": 100\n            },\n            {\n              \"uv\": {\n                \"x\": 1,\n                \"y\": 1,\n                \"width\": 1,\n                \"height\": 1\n              },\n              \"durationMs\": 100\n            }\n          ]\n        }\n      }\n    }\n  ]\n}\n"
+      }
+    },
+    {
+      "name": "defaults-filled",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:defaults",
+        "texture": " iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAEklEQVR42mNgGAWjYBSMAggAAAQQAAGvRYgsAAAAAElFTkSuQmCC\n",
+        "layout": {},
+        "variables": {
+          "note": {
+            "type": "string",
+            "key": "note",
+            "default": "x"
+          },
+          "big": {
+            "type": "long",
+            "key": "big",
+            "default": "0"
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": -10,
+              "y": -10,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "bg",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#11223344"
+            }
+          },
+          {
+            "id": "nine",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 16,
+                "height": 16
+              },
+              "fit": "nine-slice"
+            }
+          },
+          {
+            "id": "bar",
+            "type": "bar",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "range": {
+              "value": {
+                "type": "double",
+                "value": 1
+              },
+              "min": {
+                "type": "double",
+                "value": 0
+              },
+              "max": {
+                "type": "double",
+                "value": 4
+              }
+            },
+            "fill": {
+              "kind": "solid",
+              "color": "#FF0000FF"
+            }
+          },
+          {
+            "id": "txt",
+            "type": "text",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "runs": [
+              {
+                "text": "a"
+              },
+              {
+                "var": "note"
+              },
+              {
+                "ratio": {
+                  "value": {
+                    "type": "double",
+                    "value": 1
+                  },
+                  "min": {
+                    "type": "double",
+                    "value": 0
+                  },
+                  "max": {
+                    "type": "double",
+                    "value": 2
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "document": {
+          "format": "hanshu.bossbar",
+          "version": 2,
+          "id": "hanshu:defaults",
+          "texture": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAEklEQVR42mNgGAWjYBSMAggAAAQQAAGvRYgsAAAAAElFTkSuQmCC",
+          "layout": {
+            "dock": "top-center",
+            "scale": 0.5,
+            "safeMargin": 12
+          },
+          "variables": {
+            "big": {
+              "type": "long",
+              "key": "big",
+              "default": "0"
+            },
+            "note": {
+              "type": "string",
+              "key": "note",
+              "default": "x",
+              "maxLength": 256
+            }
+          },
+          "components": [
+            {
+              "id": "region",
+              "type": "display_region",
+              "box": {
+                "x": -10,
+                "y": -10,
+                "width": 100,
+                "height": 40
+              }
+            },
+            {
+              "id": "bg",
+              "type": "background",
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              },
+              "visible": true,
+              "opacity": 1,
+              "paint": {
+                "kind": "solid",
+                "color": "#11223344"
+              }
+            },
+            {
+              "id": "nine",
+              "type": "background",
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              },
+              "visible": true,
+              "opacity": 1,
+              "paint": {
+                "kind": "texture",
+                "uv": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 16,
+                  "height": 16
+                },
+                "fit": "nine-slice",
+                "insets": [
+                  8,
+                  8,
+                  8,
+                  8
+                ]
+              }
+            },
+            {
+              "id": "bar",
+              "type": "bar",
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              },
+              "visible": true,
+              "opacity": 1,
+              "range": {
+                "value": {
+                  "type": "double",
+                  "value": 1
+                },
+                "min": {
+                  "type": "double",
+                  "value": 0
+                },
+                "max": {
+                  "type": "double",
+                  "value": 4
+                }
+              },
+              "direction": "left-to-right",
+              "fill": {
+                "kind": "solid",
+                "color": "#FF0000FF"
+              },
+              "smoothMs": 120
+            },
+            {
+              "id": "txt",
+              "type": "text",
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              },
+              "visible": true,
+              "opacity": 1,
+              "runs": [
+                {
+                  "text": "a"
+                },
+                {
+                  "var": "note",
+                  "format": "string",
+                  "digits": 0
+                },
+                {
+                  "ratio": {
+                    "value": {
+                      "type": "double",
+                      "value": 1
+                    },
+                    "min": {
+                      "type": "double",
+                      "value": 0
+                    },
+                    "max": {
+                      "type": "double",
+                      "value": 2
+                    }
+                  },
+                  "format": "percent",
+                  "digits": 0
+                }
+              ],
+              "fontSize": 16,
+              "color": "#FFFFFFFF",
+              "align": "left",
+              "verticalAlign": "middle",
+              "shadow": false
+            }
+          ]
+        },
+        "canonical": "{\n  \"format\": \"hanshu.bossbar\",\n  \"version\": 2,\n  \"id\": \"hanshu:defaults\",\n  \"texture\": \"iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAEklEQVR42mNgGAWjYBSMAggAAAQQAAGvRYgsAAAAAElFTkSuQmCC\",\n  \"layout\": {\n    \"dock\": \"top-center\",\n    \"scale\": 0.5,\n    \"safeMargin\": 12\n  },\n  \"variables\": {\n    \"big\": {\n      \"type\": \"long\",\n      \"key\": \"big\",\n      \"default\": \"0\"\n    },\n    \"note\": {\n      \"type\": \"string\",\n      \"key\": \"note\",\n      \"default\": \"x\",\n      \"maxLength\": 256\n    }\n  },\n  \"components\": [\n    {\n      \"id\": \"region\",\n      \"type\": \"display_region\",\n      \"box\": {\n        \"x\": -10,\n        \"y\": -10,\n        \"width\": 100,\n        \"height\": 40\n      }\n    },\n    {\n      \"id\": \"bg\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 10,\n        \"height\": 10\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"solid\",\n        \"color\": \"#11223344\"\n      }\n    },\n    {\n      \"id\": \"nine\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 10,\n        \"height\": 10\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 0,\n          \"y\": 0,\n          \"width\": 16,\n          \"height\": 16\n        },\n        \"fit\": \"nine-slice\",\n        \"insets\": [\n          8,\n          8,\n          8,\n          8\n        ]\n      }\n    },\n    {\n      \"id\": \"bar\",\n      \"type\": \"bar\",\n      \"box\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 10,\n        \"height\": 10\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"range\": {\n        \"value\": {\n          \"type\": \"double\",\n          \"value\": 1\n        },\n        \"min\": {\n          \"type\": \"double\",\n          \"value\": 0\n        },\n        \"max\": {\n          \"type\": \"double\",\n          \"value\": 4\n        }\n      },\n      \"direction\": \"left-to-right\",\n      \"fill\": {\n        \"kind\": \"solid\",\n        \"color\": \"#FF0000FF\"\n      },\n      \"smoothMs\": 120\n    },\n    {\n      \"id\": \"txt\",\n      \"type\": \"text\",\n      \"box\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 10,\n        \"height\": 10\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"runs\": [\n        {\n          \"text\": \"a\"\n        },\n        {\n          \"var\": \"note\",\n          \"format\": \"string\",\n          \"digits\": 0\n        },\n        {\n          \"ratio\": {\n            \"value\": {\n              \"type\": \"double\",\n              \"value\": 1\n            },\n            \"min\": {\n              \"type\": \"double\",\n              \"value\": 0\n            },\n            \"max\": {\n              \"type\": \"double\",\n              \"value\": 2\n            }\n          },\n          \"format\": \"percent\",\n          \"digits\": 0\n        }\n      ],\n      \"fontSize\": 16,\n      \"color\": \"#FFFFFFFF\",\n      \"align\": \"left\",\n      \"verticalAlign\": \"middle\",\n      \"shadow\": false\n    }\n  ]\n}\n"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "unknown-field",
+      "expectedPath": "extra",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ],
+        "extra": 1
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "extra"
+        ],
+        "codes": [
+          "unknown_field"
+        ]
+      }
+    },
+    {
+      "name": "missing-texture",
+      "expectedPath": "texture",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "texture"
+        ],
+        "codes": [
+          "required"
+        ]
+      }
+    },
+    {
+      "name": "bad-base64",
+      "expectedPath": "texture",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "not a png",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "texture"
+        ],
+        "codes": [
+          "pattern"
+        ]
+      }
+    },
+    {
+      "name": "not-png",
+      "expectedPath": "texture",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "aGVsbG8gd29ybGQ=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "texture"
+        ],
+        "codes": [
+          "texture"
+        ]
+      }
+    },
+    {
+      "name": "png-no-idat",
+      "expectedPath": "texture",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAElFTkSuQmCC",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "texture"
+        ],
+        "codes": [
+          "texture"
+        ]
+      }
+    },
+    {
+      "name": "apng",
+      "expectedPath": "texture",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACGFjVEwAAAABAAAAAcMq2TYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "texture"
+        ],
+        "codes": [
+          "texture"
+        ]
+      }
+    },
+    {
+      "name": "no-display-region",
+      "expectedPath": "components",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "bg",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components"
+        ],
+        "codes": [
+          "display_region"
+        ]
+      }
+    },
+    {
+      "name": "duplicate-display-region",
+      "expectedPath": "components[1].type",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "region2",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].type"
+        ],
+        "codes": [
+          "display_region"
+        ]
+      }
+    },
+    {
+      "name": "id-leading-space",
+      "expectedPath": "id",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": " hanshu:x",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "id"
+        ],
+        "codes": [
+          "pattern"
+        ]
+      }
+    },
+    {
+      "name": "dock-unsupported",
+      "expectedPath": "layout.dock",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "bottom-left",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "layout.dock"
+        ],
+        "codes": [
+          "enum"
+        ]
+      }
+    },
+    {
+      "name": "scale-over",
+      "expectedPath": "layout.scale",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 4.5,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "layout.scale"
+        ],
+        "codes": [
+          "maximum"
+        ]
+      }
+    },
+    {
+      "name": "component-zero-width",
+      "expectedPath": "components[1].box.width",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].box.width"
+        ],
+        "codes": [
+          "exclusiveMinimum"
+        ]
+      }
+    },
+    {
+      "name": "component-outside-region",
+      "expectedPath": "components[1].box",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 90,
+              "y": 0,
+              "width": 20,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].box"
+        ],
+        "codes": [
+          "outside_region"
+        ]
+      }
+    },
+    {
+      "name": "hidden-component-outside-region",
+      "expectedPath": "components[1].box",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 30,
+              "width": 20,
+              "height": 20
+            },
+            "visible": false,
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].box"
+        ],
+        "codes": [
+          "outside_region"
+        ]
+      }
+    },
+    {
+      "name": "component-duplicate-id",
+      "expectedPath": "components[2].id",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "same",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          },
+          {
+            "id": "same",
+            "type": "background",
+            "box": {
+              "x": 10,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[2].id"
+        ],
+        "codes": [
+          "duplicate_id"
+        ]
+      }
+    },
+    {
+      "name": "uv-out-of-bounds",
+      "expectedPath": "components[1].paint.uv",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 1,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].paint.uv"
+        ],
+        "codes": [
+          "uv_out_of_bounds"
+        ]
+      }
+    },
+    {
+      "name": "animation-first-frame-mismatch",
+      "expectedPath": "components[1].paint.animation.frames[0].uv",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch",
+              "animation": {
+                "mode": "loop",
+                "phaseMs": 0,
+                "frames": [
+                  {
+                    "uv": {
+                      "x": 1,
+                      "y": 0,
+                      "width": 1,
+                      "height": 1
+                    },
+                    "durationMs": 100
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].paint.animation.frames[0].uv"
+        ],
+        "codes": [
+          "animation"
+        ]
+      }
+    },
+    {
+      "name": "animation-frame-size-mismatch",
+      "expectedPath": "components[1].paint.animation.frames[1].uv",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch",
+              "animation": {
+                "mode": "loop",
+                "phaseMs": 0,
+                "frames": [
+                  {
+                    "uv": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 1,
+                      "height": 1
+                    },
+                    "durationMs": 100
+                  },
+                  {
+                    "uv": {
+                      "x": 2,
+                      "y": 0,
+                      "width": 2,
+                      "height": 1
+                    },
+                    "durationMs": 100
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].paint.animation.frames[1].uv"
+        ],
+        "codes": [
+          "animation"
+        ]
+      }
+    },
+    {
+      "name": "nine-slice-insets-too-big",
+      "expectedPath": "components[1].paint.insets",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "nine-slice",
+              "insets": [
+                8,
+                8,
+                8,
+                8
+              ]
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].paint.insets",
+          "components[1].paint.insets"
+        ],
+        "codes": [
+          "insets",
+          "insets"
+        ]
+      }
+    },
+    {
+      "name": "bar-fill-media-contain",
+      "expectedPath": "components[1].fill.fit",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "bar",
+            "type": "bar",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 10
+            },
+            "range": {
+              "value": {
+                "type": "double",
+                "value": 50
+              },
+              "min": {
+                "type": "double",
+                "value": 0
+              },
+              "max": {
+                "type": "double",
+                "value": 100
+              }
+            },
+            "fill": {
+              "kind": "texture",
+              "uv": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "contain"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].fill.fit"
+        ],
+        "codes": [
+          "const"
+        ]
+      }
+    },
+    {
+      "name": "range-type-mixed",
+      "expectedPath": "components[1].range",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "bar",
+            "type": "bar",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 10
+            },
+            "range": {
+              "value": {
+                "type": "long",
+                "value": "5"
+              },
+              "min": {
+                "type": "double",
+                "value": 0
+              },
+              "max": {
+                "type": "double",
+                "value": 100
+              }
+            },
+            "fill": {
+              "kind": "solid",
+              "color": "#FF0000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].range"
+        ],
+        "codes": [
+          "range_type"
+        ]
+      }
+    },
+    {
+      "name": "unknown-variable",
+      "expectedPath": "components[1].range.value.var",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "bar",
+            "type": "bar",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 10
+            },
+            "range": {
+              "value": {
+                "var": "nope"
+              },
+              "min": {
+                "type": "double",
+                "value": 0
+              },
+              "max": {
+                "type": "double",
+                "value": 100
+              }
+            },
+            "fill": {
+              "kind": "solid",
+              "color": "#FF0000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].range.value.var"
+        ],
+        "codes": [
+          "unknown_reference"
+        ]
+      }
+    },
+    {
+      "name": "visibility-number-variable",
+      "expectedPath": "components[1].visible.var",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "hp": {
+            "type": "double",
+            "key": "hp",
+            "default": 0
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "visible": {
+              "var": "hp"
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#000000FF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].visible.var"
+        ],
+        "codes": [
+          "variable_type"
+        ]
+      }
+    },
+    {
+      "name": "text-format-mismatch",
+      "expectedPath": "components[1].runs[0].format",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "name": {
+            "type": "string",
+            "key": "name",
+            "default": "x"
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "t",
+            "type": "text",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 10
+            },
+            "runs": [
+              {
+                "var": "name",
+                "format": "compact"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].runs[0].format"
+        ],
+        "codes": [
+          "variable_type"
+        ]
+      }
+    },
+    {
+      "name": "long-default-out-of-range",
+      "expectedPath": "variables.big.default",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "big": {
+            "type": "long",
+            "key": "big",
+            "default": "9223372036854775808"
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "variables.big.default"
+        ],
+        "codes": [
+          "long"
+        ]
+      }
+    },
+    {
+      "name": "long-default-leading-zero",
+      "expectedPath": "variables.big.default",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "big": {
+            "type": "long",
+            "key": "big",
+            "default": "007"
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "variables.big.default"
+        ],
+        "codes": [
+          "pattern"
+        ]
+      }
+    },
+    {
+      "name": "long-range-overflow",
+      "expectedPath": "components[1].range.value.value",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "bar",
+            "type": "bar",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "range": {
+              "value": {
+                "type": "long",
+                "value": "9223372036854775808"
+              },
+              "min": {
+                "type": "long",
+                "value": "0"
+              },
+              "max": {
+                "type": "long",
+                "value": "100"
+              }
+            },
+            "fill": {
+              "kind": "solid",
+              "color": "#FFFFFFFF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].range.value.value"
+        ],
+        "codes": [
+          "long"
+        ]
+      }
+    },
+    {
+      "name": "snapshot-budget-overflow",
+      "expectedPath": "variables",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "v0": {
+            "type": "string",
+            "key": "v0",
+            "default": "",
+            "maxLength": 256
+          },
+          "v1": {
+            "type": "string",
+            "key": "v1",
+            "default": "",
+            "maxLength": 256
+          },
+          "v2": {
+            "type": "string",
+            "key": "v2",
+            "default": "",
+            "maxLength": 256
+          },
+          "v3": {
+            "type": "string",
+            "key": "v3",
+            "default": "",
+            "maxLength": 256
+          },
+          "v4": {
+            "type": "string",
+            "key": "v4",
+            "default": "",
+            "maxLength": 256
+          },
+          "v5": {
+            "type": "string",
+            "key": "v5",
+            "default": "",
+            "maxLength": 256
+          },
+          "v6": {
+            "type": "string",
+            "key": "v6",
+            "default": "",
+            "maxLength": 256
+          },
+          "v7": {
+            "type": "string",
+            "key": "v7",
+            "default": "",
+            "maxLength": 256
+          },
+          "v8": {
+            "type": "string",
+            "key": "v8",
+            "default": "",
+            "maxLength": 256
+          },
+          "v9": {
+            "type": "string",
+            "key": "v9",
+            "default": "",
+            "maxLength": 256
+          },
+          "v10": {
+            "type": "string",
+            "key": "v10",
+            "default": "",
+            "maxLength": 256
+          },
+          "v11": {
+            "type": "string",
+            "key": "v11",
+            "default": "",
+            "maxLength": 256
+          },
+          "v12": {
+            "type": "string",
+            "key": "v12",
+            "default": "",
+            "maxLength": 256
+          },
+          "v13": {
+            "type": "string",
+            "key": "v13",
+            "default": "",
+            "maxLength": 256
+          },
+          "v14": {
+            "type": "string",
+            "key": "v14",
+            "default": "",
+            "maxLength": 256
+          },
+          "v15": {
+            "type": "string",
+            "key": "v15",
+            "default": "",
+            "maxLength": 256
+          },
+          "v16": {
+            "type": "string",
+            "key": "v16",
+            "default": "",
+            "maxLength": 256
+          },
+          "v17": {
+            "type": "string",
+            "key": "v17",
+            "default": "",
+            "maxLength": 256
+          },
+          "v18": {
+            "type": "string",
+            "key": "v18",
+            "default": "",
+            "maxLength": 256
+          },
+          "v19": {
+            "type": "string",
+            "key": "v19",
+            "default": "",
+            "maxLength": 256
+          },
+          "v20": {
+            "type": "string",
+            "key": "v20",
+            "default": "",
+            "maxLength": 256
+          },
+          "v21": {
+            "type": "string",
+            "key": "v21",
+            "default": "",
+            "maxLength": 256
+          },
+          "v22": {
+            "type": "string",
+            "key": "v22",
+            "default": "",
+            "maxLength": 256
+          },
+          "v23": {
+            "type": "string",
+            "key": "v23",
+            "default": "",
+            "maxLength": 256
+          },
+          "v24": {
+            "type": "string",
+            "key": "v24",
+            "default": "",
+            "maxLength": 256
+          },
+          "v25": {
+            "type": "string",
+            "key": "v25",
+            "default": "",
+            "maxLength": 256
+          },
+          "v26": {
+            "type": "string",
+            "key": "v26",
+            "default": "",
+            "maxLength": 256
+          },
+          "v27": {
+            "type": "string",
+            "key": "v27",
+            "default": "",
+            "maxLength": 256
+          },
+          "v28": {
+            "type": "string",
+            "key": "v28",
+            "default": "",
+            "maxLength": 256
+          },
+          "v29": {
+            "type": "string",
+            "key": "v29",
+            "default": "",
+            "maxLength": 256
+          },
+          "v30": {
+            "type": "string",
+            "key": "v30",
+            "default": "",
+            "maxLength": 256
+          },
+          "v31": {
+            "type": "string",
+            "key": "v31",
+            "default": "",
+            "maxLength": 256
+          },
+          "v32": {
+            "type": "string",
+            "key": "v32",
+            "default": "",
+            "maxLength": 256
+          },
+          "v33": {
+            "type": "string",
+            "key": "v33",
+            "default": "",
+            "maxLength": 256
+          },
+          "v34": {
+            "type": "string",
+            "key": "v34",
+            "default": "",
+            "maxLength": 256
+          },
+          "v35": {
+            "type": "string",
+            "key": "v35",
+            "default": "",
+            "maxLength": 256
+          },
+          "v36": {
+            "type": "string",
+            "key": "v36",
+            "default": "",
+            "maxLength": 256
+          },
+          "v37": {
+            "type": "string",
+            "key": "v37",
+            "default": "",
+            "maxLength": 256
+          },
+          "v38": {
+            "type": "string",
+            "key": "v38",
+            "default": "",
+            "maxLength": 256
+          },
+          "v39": {
+            "type": "string",
+            "key": "v39",
+            "default": "",
+            "maxLength": 256
+          },
+          "v40": {
+            "type": "string",
+            "key": "v40",
+            "default": "",
+            "maxLength": 256
+          },
+          "v41": {
+            "type": "string",
+            "key": "v41",
+            "default": "",
+            "maxLength": 256
+          },
+          "v42": {
+            "type": "string",
+            "key": "v42",
+            "default": "",
+            "maxLength": 256
+          },
+          "v43": {
+            "type": "string",
+            "key": "v43",
+            "default": "",
+            "maxLength": 256
+          },
+          "v44": {
+            "type": "string",
+            "key": "v44",
+            "default": "",
+            "maxLength": 256
+          },
+          "v45": {
+            "type": "string",
+            "key": "v45",
+            "default": "",
+            "maxLength": 256
+          },
+          "v46": {
+            "type": "string",
+            "key": "v46",
+            "default": "",
+            "maxLength": 256
+          },
+          "v47": {
+            "type": "string",
+            "key": "v47",
+            "default": "",
+            "maxLength": 256
+          },
+          "v48": {
+            "type": "string",
+            "key": "v48",
+            "default": "",
+            "maxLength": 256
+          },
+          "v49": {
+            "type": "string",
+            "key": "v49",
+            "default": "",
+            "maxLength": 256
+          },
+          "v50": {
+            "type": "string",
+            "key": "v50",
+            "default": "",
+            "maxLength": 256
+          },
+          "v51": {
+            "type": "string",
+            "key": "v51",
+            "default": "",
+            "maxLength": 256
+          },
+          "v52": {
+            "type": "string",
+            "key": "v52",
+            "default": "",
+            "maxLength": 256
+          },
+          "v53": {
+            "type": "string",
+            "key": "v53",
+            "default": "",
+            "maxLength": 256
+          },
+          "v54": {
+            "type": "string",
+            "key": "v54",
+            "default": "",
+            "maxLength": 256
+          },
+          "v55": {
+            "type": "string",
+            "key": "v55",
+            "default": "",
+            "maxLength": 256
+          },
+          "v56": {
+            "type": "string",
+            "key": "v56",
+            "default": "",
+            "maxLength": 256
+          },
+          "v57": {
+            "type": "string",
+            "key": "v57",
+            "default": "",
+            "maxLength": 256
+          },
+          "v58": {
+            "type": "string",
+            "key": "v58",
+            "default": "",
+            "maxLength": 256
+          },
+          "v59": {
+            "type": "string",
+            "key": "v59",
+            "default": "",
+            "maxLength": 256
+          },
+          "v60": {
+            "type": "string",
+            "key": "v60",
+            "default": "",
+            "maxLength": 256
+          },
+          "v61": {
+            "type": "string",
+            "key": "v61",
+            "default": "",
+            "maxLength": 256
+          },
+          "v62": {
+            "type": "string",
+            "key": "v62",
+            "default": "",
+            "maxLength": 256
+          },
+          "v63": {
+            "type": "string",
+            "key": "v63",
+            "default": "",
+            "maxLength": 256
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "variables"
+        ],
+        "codes": [
+          "budget"
+        ]
+      }
+    },
+    {
+      "name": "string-default-too-long",
+      "expectedPath": "variables.short.default",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {
+          "short": {
+            "type": "string",
+            "key": "short",
+            "default": "abcdef",
+            "maxLength": 3
+          }
+        },
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 40
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "variables.short.default"
+        ],
+        "codes": [
+          "variable_default"
+        ]
+      }
+    },
+    {
+      "name": "bad-color",
+      "expectedPath": "components[1].paint.color",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "a",
+            "type": "background",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "paint": {
+              "kind": "solid",
+              "color": "#FFF"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].paint.color"
+        ],
+        "codes": [
+          "pattern"
+        ]
+      }
+    },
+    {
+      "name": "missing-runs",
+      "expectedPath": "components[1].runs",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            }
+          },
+          {
+            "id": "t",
+            "type": "text",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[1].runs"
+        ],
+        "codes": [
+          "type"
+        ]
+      }
+    },
+    {
+      "name": "display-region-with-visible",
+      "expectedPath": "components[0].visible",
+      "input": {
+        "format": "hanshu.bossbar",
+        "version": 2,
+        "id": "hanshu:minimal",
+        "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "layout": {
+          "dock": "top-center",
+          "scale": 1,
+          "safeMargin": 8
+        },
+        "variables": {},
+        "components": [
+          {
+            "id": "region",
+            "type": "display_region",
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 40
+            },
+            "visible": true
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "paths": [
+          "components[0].visible"
+        ],
+        "codes": [
+          "unknown_field"
+        ]
+      }
+    }
+  ],
+  "unsupportedVersion": {
+    "ok": false,
+    "paths": [
+      "version"
+    ],
+    "codes": [
+      "version"
+    ]
+  },
+  "v1": {
+    "input": {
+      "format": "hanshu.bossbar",
+      "version": 1,
+      "id": "legacy"
+    },
+    "parse": {
+      "ok": false,
+      "paths": [
+        "version"
+      ],
+      "codes": [
+        "version"
+      ]
+    },
+    "upgrade": {
+      "format": "hanshu.bossbar",
+      "version": 2,
+      "id": "legacy",
+      "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "variables": {},
+      "components": [
+        {
+          "id": "region",
+          "type": "display_region",
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 768,
+            "height": 72
+          }
+        }
+      ]
+    }
+  },
+  "newDocument": {
+    "id": "hanshu:new",
+    "document": {
+      "format": "hanshu.bossbar",
+      "version": 2,
+      "id": "hanshu:new",
+      "texture": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "variables": {},
+      "components": [
+        {
+          "id": "region",
+          "type": "display_region",
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 768,
+            "height": 72
+          }
+        }
+      ]
+    }
+  },
+  "demo": {
+    "document": {
+      "format": "hanshu.bossbar",
+      "version": 2,
+      "id": "hanshu:ember_guard",
+      "texture": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC",
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "variables": {
+        "bossName": {
+          "type": "string",
+          "key": "boss_name",
+          "default": "首领",
+          "maxLength": 64
+        },
+        "enraged": {
+          "type": "bool",
+          "key": "enraged",
+          "default": false
+        },
+        "health": {
+          "type": "double",
+          "key": "health",
+          "default": 0
+        },
+        "maxHealth": {
+          "type": "double",
+          "key": "max_health",
+          "default": 1
+        },
+        "maxShield": {
+          "type": "long",
+          "key": "max_shield",
+          "default": "100"
+        },
+        "shield": {
+          "type": "long",
+          "key": "shield",
+          "default": "0"
+        },
+        "targetName": {
+          "type": "string",
+          "key": "target_name",
+          "default": "无",
+          "maxLength": 64
+        }
+      },
+      "components": [
+        {
+          "id": "region",
+          "type": "display_region",
+          "box": {
+            "x": -384,
+            "y": -36,
+            "width": 768,
+            "height": 72
+          }
+        },
+        {
+          "id": "track",
+          "type": "background",
+          "box": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          },
+          "visible": true,
+          "opacity": 1,
+          "paint": {
+            "kind": "texture",
+            "uv": {
+              "x": 0,
+              "y": 0,
+              "width": 1,
+              "height": 1
+            },
+            "fit": "stretch"
+          }
+        },
+        {
+          "id": "emblem",
+          "type": "background",
+          "box": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          },
+          "visible": true,
+          "opacity": 1,
+          "paint": {
+            "kind": "texture",
+            "uv": {
+              "x": 3,
+              "y": 0,
+              "width": 1,
+              "height": 1
+            },
+            "fit": "contain"
+          }
+        },
+        {
+          "id": "health_fill",
+          "type": "bar",
+          "box": {
+            "x": -284,
+            "y": -4,
+            "width": 628,
+            "height": 12
+          },
+          "visible": true,
+          "opacity": 1,
+          "range": {
+            "value": {
+              "var": "health"
+            },
+            "min": {
+              "type": "double",
+              "value": 0
+            },
+            "max": {
+              "var": "maxHealth"
+            }
+          },
+          "direction": "left-to-right",
+          "fill": {
+            "kind": "texture",
+            "uv": {
+              "x": 1,
+              "y": 0,
+              "width": 1,
+              "height": 1
+            },
+            "fit": "stretch"
+          },
+          "trail": {
+            "paint": {
+              "kind": "texture",
+              "uv": {
+                "x": 2,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              },
+              "fit": "stretch"
+            },
+            "delayMs": 250,
+            "durationMs": 350
+          },
+          "smoothMs": 120
+        },
+        {
+          "id": "shield_fill",
+          "type": "bar",
+          "box": {
+            "x": -284,
+            "y": 16,
+            "width": 628,
+            "height": 4
+          },
+          "visible": true,
+          "opacity": 1,
+          "range": {
+            "value": {
+              "var": "shield"
+            },
+            "min": {
+              "type": "long",
+              "value": "0"
+            },
+            "max": {
+              "var": "maxShield"
+            }
+          },
+          "direction": "left-to-right",
+          "fill": {
+            "kind": "texture",
+            "uv": {
+              "x": 2,
+              "y": 1,
+              "width": 1,
+              "height": 1
+            },
+            "fit": "stretch"
+          },
+          "smoothMs": 120
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "box": {
+            "x": -284,
+            "y": -36,
+            "width": 628,
+            "height": 24
+          },
+          "visible": true,
+          "opacity": 1,
+          "runs": [
+            {
+              "var": "bossName",
+              "format": "string",
+              "digits": 0
+            },
+            {
+              "text": "  目标："
+            },
+            {
+              "var": "targetName",
+              "format": "string",
+              "digits": 0
+            }
+          ],
+          "fontSize": 18,
+          "color": "#FFFFFFFF",
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "id": "health_text",
+          "type": "text",
+          "box": {
+            "x": -284,
+            "y": -9,
+            "width": 628,
+            "height": 22
+          },
+          "visible": true,
+          "opacity": 1,
+          "runs": [
+            {
+              "var": "health",
+              "format": "compact",
+              "digits": 1
+            },
+            {
+              "text": "（"
+            },
+            {
+              "ratio": {
+                "value": {
+                  "var": "health"
+                },
+                "min": {
+                  "type": "double",
+                  "value": 0
+                },
+                "max": {
+                  "var": "maxHealth"
+                }
+              },
+              "format": "percent",
+              "digits": 1
+            },
+            {
+              "text": "）"
+            }
+          ],
+          "fontSize": 14,
+          "color": "#FFFFFFFF",
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "id": "rage_flame",
+          "type": "background",
+          "box": {
+            "x": -276,
+            "y": 23,
+            "width": 608,
+            "height": 8
+          },
+          "visible": {
+            "var": "enraged"
+          },
+          "opacity": 1,
+          "paint": {
+            "kind": "texture",
+            "uv": {
+              "x": 0,
+              "y": 1,
+              "width": 1,
+              "height": 1
+            },
+            "fit": "stretch",
+            "animation": {
+              "mode": "loop",
+              "phaseMs": 0,
+              "frames": [
+                {
+                  "uv": {
+                    "x": 0,
+                    "y": 1,
+                    "width": 1,
+                    "height": 1
+                  },
+                  "durationMs": 100
+                },
+                {
+                  "uv": {
+                    "x": 1,
+                    "y": 1,
+                    "width": 1,
+                    "height": 1
+                  },
+                  "durationMs": 100
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "texture": {
+      "width": 4,
+      "height": 2,
+      "byteLength": 96
+    },
+    "canonical": "{\n  \"format\": \"hanshu.bossbar\",\n  \"version\": 2,\n  \"id\": \"hanshu:ember_guard\",\n  \"texture\": \"iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAJ0lEQVR4nGNQFhD7/1ZF5///zZ7/t0yL+s/wP4Dh//8TQAwEDEAAADbPEjL7vUAnAAAAAElFTkSuQmCC\",\n  \"layout\": {\n    \"dock\": \"top-center\",\n    \"scale\": 0.5,\n    \"safeMargin\": 12\n  },\n  \"variables\": {\n    \"bossName\": {\n      \"type\": \"string\",\n      \"key\": \"boss_name\",\n      \"default\": \"首领\",\n      \"maxLength\": 64\n    },\n    \"enraged\": {\n      \"type\": \"bool\",\n      \"key\": \"enraged\",\n      \"default\": false\n    },\n    \"health\": {\n      \"type\": \"double\",\n      \"key\": \"health\",\n      \"default\": 0\n    },\n    \"maxHealth\": {\n      \"type\": \"double\",\n      \"key\": \"max_health\",\n      \"default\": 1\n    },\n    \"maxShield\": {\n      \"type\": \"long\",\n      \"key\": \"max_shield\",\n      \"default\": \"100\"\n    },\n    \"shield\": {\n      \"type\": \"long\",\n      \"key\": \"shield\",\n      \"default\": \"0\"\n    },\n    \"targetName\": {\n      \"type\": \"string\",\n      \"key\": \"target_name\",\n      \"default\": \"无\",\n      \"maxLength\": 64\n    }\n  },\n  \"components\": [\n    {\n      \"id\": \"region\",\n      \"type\": \"display_region\",\n      \"box\": {\n        \"x\": -384,\n        \"y\": -36,\n        \"width\": 768,\n        \"height\": 72\n      }\n    },\n    {\n      \"id\": \"track\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -288,\n        \"y\": -8,\n        \"width\": 636,\n        \"height\": 20\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 0,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      }\n    },\n    {\n      \"id\": \"emblem\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -364,\n        \"y\": -32,\n        \"width\": 60,\n        \"height\": 60\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 3,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"contain\"\n      }\n    },\n    {\n      \"id\": \"health_fill\",\n      \"type\": \"bar\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -4,\n        \"width\": 628,\n        \"height\": 12\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"range\": {\n        \"value\": {\n          \"var\": \"health\"\n        },\n        \"min\": {\n          \"type\": \"double\",\n          \"value\": 0\n        },\n        \"max\": {\n          \"var\": \"maxHealth\"\n        }\n      },\n      \"direction\": \"left-to-right\",\n      \"fill\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 1,\n          \"y\": 0,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      },\n      \"trail\": {\n        \"paint\": {\n          \"kind\": \"texture\",\n          \"uv\": {\n            \"x\": 2,\n            \"y\": 0,\n            \"width\": 1,\n            \"height\": 1\n          },\n          \"fit\": \"stretch\"\n        },\n        \"delayMs\": 250,\n        \"durationMs\": 350\n      },\n      \"smoothMs\": 120\n    },\n    {\n      \"id\": \"shield_fill\",\n      \"type\": \"bar\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": 16,\n        \"width\": 628,\n        \"height\": 4\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"range\": {\n        \"value\": {\n          \"var\": \"shield\"\n        },\n        \"min\": {\n          \"type\": \"long\",\n          \"value\": \"0\"\n        },\n        \"max\": {\n          \"var\": \"maxShield\"\n        }\n      },\n      \"direction\": \"left-to-right\",\n      \"fill\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 2,\n          \"y\": 1,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\"\n      },\n      \"smoothMs\": 120\n    },\n    {\n      \"id\": \"title\",\n      \"type\": \"text\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -36,\n        \"width\": 628,\n        \"height\": 24\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"runs\": [\n        {\n          \"var\": \"bossName\",\n          \"format\": \"string\",\n          \"digits\": 0\n        },\n        {\n          \"text\": \"  目标：\"\n        },\n        {\n          \"var\": \"targetName\",\n          \"format\": \"string\",\n          \"digits\": 0\n        }\n      ],\n      \"fontSize\": 18,\n      \"color\": \"#FFFFFFFF\",\n      \"align\": \"center\",\n      \"verticalAlign\": \"middle\",\n      \"shadow\": true\n    },\n    {\n      \"id\": \"health_text\",\n      \"type\": \"text\",\n      \"box\": {\n        \"x\": -284,\n        \"y\": -9,\n        \"width\": 628,\n        \"height\": 22\n      },\n      \"visible\": true,\n      \"opacity\": 1,\n      \"runs\": [\n        {\n          \"var\": \"health\",\n          \"format\": \"compact\",\n          \"digits\": 1\n        },\n        {\n          \"text\": \"（\"\n        },\n        {\n          \"ratio\": {\n            \"value\": {\n              \"var\": \"health\"\n            },\n            \"min\": {\n              \"type\": \"double\",\n              \"value\": 0\n            },\n            \"max\": {\n              \"var\": \"maxHealth\"\n            }\n          },\n          \"format\": \"percent\",\n          \"digits\": 1\n        },\n        {\n          \"text\": \"）\"\n        }\n      ],\n      \"fontSize\": 14,\n      \"color\": \"#FFFFFFFF\",\n      \"align\": \"center\",\n      \"verticalAlign\": \"middle\",\n      \"shadow\": true\n    },\n    {\n      \"id\": \"rage_flame\",\n      \"type\": \"background\",\n      \"box\": {\n        \"x\": -276,\n        \"y\": 23,\n        \"width\": 608,\n        \"height\": 8\n      },\n      \"visible\": {\n        \"var\": \"enraged\"\n      },\n      \"opacity\": 1,\n      \"paint\": {\n        \"kind\": \"texture\",\n        \"uv\": {\n          \"x\": 0,\n          \"y\": 1,\n          \"width\": 1,\n          \"height\": 1\n        },\n        \"fit\": \"stretch\",\n        \"animation\": {\n          \"mode\": \"loop\",\n          \"phaseMs\": 0,\n          \"frames\": [\n            {\n              \"uv\": {\n                \"x\": 0,\n                \"y\": 1,\n                \"width\": 1,\n                \"height\": 1\n              },\n              \"durationMs\": 100\n            },\n            {\n              \"uv\": {\n                \"x\": 1,\n                \"y\": 1,\n                \"width\": 1,\n                \"height\": 1\n              },\n              \"durationMs\": 100\n            }\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "hints": [],
+    "snapshot": {
+      "worstBytes": 757,
+      "perValue": [
+        {
+          "name": "bossName",
+          "key": "boss_name",
+          "bytes": 279
+        },
+        {
+          "name": "enraged",
+          "key": "enraged",
+          "bytes": 21
+        },
+        {
+          "name": "health",
+          "key": "health",
+          "bytes": 26
+        },
+        {
+          "name": "maxHealth",
+          "key": "max_health",
+          "bytes": 33
+        },
+        {
+          "name": "maxShield",
+          "key": "max_shield",
+          "bytes": 45
+        },
+        {
+          "name": "shield",
+          "key": "shield",
+          "bytes": 38
+        },
+        {
+          "name": "targetName",
+          "key": "target_name",
+          "bytes": 283
+        }
+      ]
+    },
+    "shieldRangeType": "long",
+    "shieldRangeRatio": 1,
+    "longSceneCommands": 7
+  },
+  "textureProbe": {
+    "source": "BOSSBAR_SAMPLE_TEXTURE",
+    "bytes": 96,
+    "info": {
+      "width": 4,
+      "height": 2,
+      "apng": false,
+      "chunks": [
+        "IHDR",
+        "IDAT",
+        "IEND"
+      ]
+    }
+  },
+  "numberFormat": [
+    {
+      "kind": "double",
+      "value": 0,
+      "digits": 0,
+      "number": "0",
+      "compact": "0",
+      "percent": "0%",
+      "expect": {
+        "number": "0",
+        "compact": "0",
+        "percent": "0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 0,
+      "digits": 1,
+      "number": "0.0",
+      "compact": "0.0",
+      "percent": "0.0%",
+      "expect": {
+        "number": "0.0",
+        "compact": "0.0",
+        "percent": "0.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 0.5,
+      "digits": 0,
+      "number": "1",
+      "compact": "1",
+      "percent": "50%",
+      "expect": {
+        "number": "1",
+        "compact": "1",
+        "percent": "50%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": -0.5,
+      "digits": 0,
+      "number": "-1",
+      "compact": "-1",
+      "percent": "-50%",
+      "expect": {
+        "number": "-1",
+        "compact": "-1",
+        "percent": "-50%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 1.25,
+      "digits": 1,
+      "number": "1.3",
+      "compact": "1.3",
+      "percent": "125.0%",
+      "expect": {
+        "number": "1.3",
+        "compact": "1.3",
+        "percent": "125.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 1.24,
+      "digits": 1,
+      "number": "1.2",
+      "compact": "1.2",
+      "percent": "124.0%",
+      "expect": {
+        "number": "1.2",
+        "compact": "1.2",
+        "percent": "124.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 999.94,
+      "digits": 1,
+      "number": "999.9",
+      "compact": "999.9",
+      "percent": "99994.0%",
+      "expect": {
+        "number": "999.9",
+        "compact": "999.9",
+        "percent": "99994.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 999.96,
+      "digits": 1,
+      "number": "1000.0",
+      "compact": "1.0K",
+      "percent": "99996.0%",
+      "expect": {
+        "number": "1000.0",
+        "compact": "1.0K",
+        "percent": "99996.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 1200000,
+      "digits": 1,
+      "number": "1200000.0",
+      "compact": "1.2M",
+      "percent": "120000000.0%",
+      "expect": {
+        "number": "1200000.0",
+        "compact": "1.2M",
+        "percent": "120000000.0%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 999999,
+      "digits": 0,
+      "number": "999999",
+      "compact": "1M",
+      "percent": "99999900%",
+      "expect": {
+        "number": "999999",
+        "compact": "1M",
+        "percent": "99999900%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": -1500,
+      "digits": 0,
+      "number": "-1500",
+      "compact": "-2K",
+      "percent": "-150000%",
+      "expect": {
+        "number": "-1500",
+        "compact": "-2K",
+        "percent": "-150000%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 2500000000,
+      "digits": 2,
+      "number": "2500000000.00",
+      "compact": "2.50B",
+      "percent": "250000000000.00%",
+      "expect": {
+        "number": "2500000000.00",
+        "compact": "2.50B",
+        "percent": "250000000000.00%"
+      }
+    },
+    {
+      "kind": "double",
+      "value": 0.0001,
+      "digits": 4,
+      "number": "0.0001",
+      "compact": "0.0001",
+      "percent": "0.0100%",
+      "expect": {
+        "number": "0.0001",
+        "compact": "0.0001",
+        "percent": "0.0100%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "0",
+      "digits": 0,
+      "number": "0",
+      "compact": "0",
+      "percent": "0%",
+      "expect": {
+        "number": "0",
+        "compact": "0",
+        "percent": "0%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "9007199254740993",
+      "digits": 0,
+      "number": "9007199254740993",
+      "compact": "9007199B",
+      "percent": "900719925474099300%",
+      "expect": {
+        "number": "9007199254740993",
+        "compact": "9007199B",
+        "percent": "900719925474099300%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "9223372036854775807",
+      "digits": 0,
+      "number": "9223372036854775807",
+      "compact": "9223372037B",
+      "percent": "922337203685477580700%",
+      "expect": {
+        "number": "9223372036854775807",
+        "compact": "9223372037B",
+        "percent": "922337203685477580700%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "9223372036854775807",
+      "digits": 1,
+      "number": "9223372036854775807",
+      "compact": "9223372036.9B",
+      "percent": "922337203685477580700%",
+      "expect": {
+        "number": "9223372036854775807",
+        "compact": "9223372036.9B",
+        "percent": "922337203685477580700%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "-9223372036854775808",
+      "digits": 0,
+      "number": "-9223372036854775808",
+      "compact": "-9223372037B",
+      "percent": "-922337203685477580800%",
+      "expect": {
+        "number": "-9223372036854775808",
+        "compact": "-9223372037B",
+        "percent": "-922337203685477580800%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "1200000",
+      "digits": 1,
+      "number": "1200000",
+      "compact": "1.2M",
+      "percent": "120000000%",
+      "expect": {
+        "number": "1200000",
+        "compact": "1.2M",
+        "percent": "120000000%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "999950",
+      "digits": 1,
+      "number": "999950",
+      "compact": "1.0M",
+      "percent": "99995000%",
+      "expect": {
+        "number": "999950",
+        "compact": "1.0M",
+        "percent": "99995000%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "999",
+      "digits": 0,
+      "number": "999",
+      "compact": "999",
+      "percent": "99900%",
+      "expect": {
+        "number": "999",
+        "compact": "999",
+        "percent": "99900%"
+      }
+    },
+    {
+      "kind": "long",
+      "value": "-1500",
+      "digits": 0,
+      "number": "-1500",
+      "compact": "-2K",
+      "percent": "-150000%",
+      "expect": {
+        "number": "-1500",
+        "compact": "-2K",
+        "percent": "-150000%"
+      }
+    }
+  ],
+  "frames": [
+    {
+      "mode": "loop",
+      "durations": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "phaseMs": 0,
+      "cycle": 400,
+      "samples": [
+        {
+          "timeMs": 0,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 99,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 100,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 399,
+          "index": 3,
+          "uv": {
+            "x": 3,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 3
+        },
+        {
+          "timeMs": 400,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        }
+      ]
+    },
+    {
+      "mode": "pingpong",
+      "durations": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "phaseMs": 0,
+      "cycle": 600,
+      "samples": [
+        {
+          "timeMs": 0,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 100,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 200,
+          "index": 2,
+          "uv": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 2
+        },
+        {
+          "timeMs": 300,
+          "index": 3,
+          "uv": {
+            "x": 3,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 3
+        },
+        {
+          "timeMs": 400,
+          "index": 2,
+          "uv": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 2
+        },
+        {
+          "timeMs": 500,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 599,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 600,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        }
+      ]
+    },
+    {
+      "mode": "once",
+      "durations": [
+        100,
+        100
+      ],
+      "phaseMs": 50,
+      "cycle": 200,
+      "samples": [
+        {
+          "timeMs": 0,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 49,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 50,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 149,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 150,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 10000,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        }
+      ]
+    },
+    {
+      "mode": "pingpong",
+      "durations": [
+        40,
+        120,
+        60
+      ],
+      "phaseMs": 0,
+      "cycle": 340,
+      "samples": [
+        {
+          "timeMs": 0,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 39,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        },
+        {
+          "timeMs": 40,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 159,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 160,
+          "index": 2,
+          "uv": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 2
+        },
+        {
+          "timeMs": 219,
+          "index": 2,
+          "uv": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 2
+        },
+        {
+          "timeMs": 220,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 339,
+          "index": 1,
+          "uv": {
+            "x": 1,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 1
+        },
+        {
+          "timeMs": 340,
+          "index": 0,
+          "uv": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "expect": 0
+        }
+      ]
+    }
+  ],
+  "ratio": [
+    {
+      "kind": "double",
+      "value": 50,
+      "min": 0,
+      "max": 100,
+      "ratio": 0.5,
+      "expect": 0.5
+    },
+    {
+      "kind": "double",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "double",
+      "value": 100,
+      "min": 0,
+      "max": 100,
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "double",
+      "value": -10,
+      "min": 0,
+      "max": 100,
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "double",
+      "value": 150,
+      "min": 0,
+      "max": 100,
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "double",
+      "value": 5,
+      "min": 5,
+      "max": 5,
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "double",
+      "value": 5,
+      "min": 10,
+      "max": 0,
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "double",
+      "value": 300000,
+      "min": 0,
+      "max": 1200000,
+      "ratio": 0.25,
+      "expect": 0.25
+    },
+    {
+      "kind": "double",
+      "value": 1,
+      "min": -1,
+      "max": 1,
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "double",
+      "value": 0,
+      "min": -1,
+      "max": 1,
+      "ratio": 0.5,
+      "expect": 0.5
+    },
+    {
+      "kind": "double",
+      "value": 1.7976931348623157e+308,
+      "min": -1.7976931348623157e+308,
+      "max": 0,
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "double",
+      "value": 0,
+      "min": -1.7976931348623157e+308,
+      "max": 1.7976931348623157e+308,
+      "ratio": 0.5,
+      "expect": 0.5
+    },
+    {
+      "kind": "long",
+      "value": "0",
+      "min": "0",
+      "max": "100",
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "long",
+      "value": "50",
+      "min": "0",
+      "max": "100",
+      "ratio": 0.5,
+      "expect": 0.5
+    },
+    {
+      "kind": "long",
+      "value": "100",
+      "min": "0",
+      "max": "100",
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "long",
+      "value": "-5",
+      "min": "0",
+      "max": "100",
+      "ratio": 0,
+      "expect": 0
+    },
+    {
+      "kind": "long",
+      "value": "9223372036854775807",
+      "min": "0",
+      "max": "9223372036854775807",
+      "ratio": 1,
+      "expect": 1
+    },
+    {
+      "kind": "long",
+      "value": "4611686018427387903",
+      "min": "0",
+      "max": "9223372036854775807",
+      "ratio": 0.5,
+      "expect": 0.5
+    },
+    {
+      "kind": "long",
+      "value": "-9223372036854775808",
+      "min": "-9223372036854775808",
+      "max": "9223372036854775807",
+      "ratio": 0,
+      "expect": 0
+    }
+  ],
+  "nineSlice": [
+    {
+      "name": "normal",
+      "src": [
+        64,
+        32
+      ],
+      "dst": {
+        "x": 0,
+        "y": 0,
+        "width": 200,
+        "height": 40
+      },
+      "insets": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "pieces": [
+        {
+          "sx": 0,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 0,
+          "dy": 0,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 8,
+          "sy": 0,
+          "sw": 48,
+          "sh": 8,
+          "dx": 8,
+          "dy": 0,
+          "dw": 184,
+          "dh": 8
+        },
+        {
+          "sx": 56,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 192,
+          "dy": 0,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 0,
+          "sy": 8,
+          "sw": 8,
+          "sh": 16,
+          "dx": 0,
+          "dy": 8,
+          "dw": 8,
+          "dh": 24
+        },
+        {
+          "sx": 8,
+          "sy": 8,
+          "sw": 48,
+          "sh": 16,
+          "dx": 8,
+          "dy": 8,
+          "dw": 184,
+          "dh": 24
+        },
+        {
+          "sx": 56,
+          "sy": 8,
+          "sw": 8,
+          "sh": 16,
+          "dx": 192,
+          "dy": 8,
+          "dw": 8,
+          "dh": 24
+        },
+        {
+          "sx": 0,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 0,
+          "dy": 32,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 8,
+          "sy": 24,
+          "sw": 48,
+          "sh": 8,
+          "dx": 8,
+          "dy": 32,
+          "dw": 184,
+          "dh": 8
+        },
+        {
+          "sx": 56,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 192,
+          "dy": 32,
+          "dw": 8,
+          "dh": 8
+        }
+      ]
+    },
+    {
+      "name": "too-small",
+      "src": [
+        64,
+        32
+      ],
+      "dst": {
+        "x": 4,
+        "y": 4,
+        "width": 8,
+        "height": 6
+      },
+      "insets": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "pieces": [
+        {
+          "sx": 0,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 4,
+          "dy": 4,
+          "dw": 4,
+          "dh": 3
+        },
+        {
+          "sx": 56,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 8,
+          "dy": 4,
+          "dw": 4,
+          "dh": 3
+        },
+        {
+          "sx": 0,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 4,
+          "dy": 7,
+          "dw": 4,
+          "dh": 3
+        },
+        {
+          "sx": 56,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 8,
+          "dy": 7,
+          "dw": 4,
+          "dh": 3
+        }
+      ]
+    },
+    {
+      "name": "zero-center",
+      "src": [
+        64,
+        32
+      ],
+      "dst": {
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "insets": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "pieces": [
+        {
+          "sx": 0,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 0,
+          "dy": 0,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 56,
+          "sy": 0,
+          "sw": 8,
+          "sh": 8,
+          "dx": 8,
+          "dy": 0,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 0,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 0,
+          "dy": 8,
+          "dw": 8,
+          "dh": 8
+        },
+        {
+          "sx": 56,
+          "sy": 24,
+          "sw": 8,
+          "sh": 8,
+          "dx": 8,
+          "dy": 8,
+          "dw": 8,
+          "dh": 8
+        }
+      ]
+    }
+  ],
+  "barSegment": [
+    {
+      "box": {
+        "x": 100,
+        "y": 32,
+        "width": 628,
+        "height": 12
+      },
+      "from": 0,
+      "to": 0.25,
+      "direction": "left-to-right",
+      "segment": {
+        "x": 100,
+        "y": 32,
+        "width": 157,
+        "height": 12
+      }
+    },
+    {
+      "box": {
+        "x": 100,
+        "y": 32,
+        "width": 628,
+        "height": 12
+      },
+      "from": 0.5,
+      "to": 0.8,
+      "direction": "right-to-left",
+      "segment": {
+        "x": 225.6,
+        "y": 32,
+        "width": 188.4,
+        "height": 12
+      }
+    },
+    {
+      "box": {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 100
+      },
+      "from": 0,
+      "to": 0.35,
+      "direction": "bottom-to-top",
+      "segment": {
+        "x": 0,
+        "y": 65,
+        "width": 10,
+        "height": 35
+      }
+    },
+    {
+      "box": {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 100
+      },
+      "from": 0.2,
+      "to": 0.9,
+      "direction": "top-to-bottom",
+      "segment": {
+        "x": 0,
+        "y": 20,
+        "width": 10,
+        "height": 70
+      }
+    },
+    {
+      "box": {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 100
+      },
+      "from": 0.3,
+      "to": 0.3,
+      "direction": "top-to-bottom",
+      "segment": null
+    }
+  ],
+  "truncate": [
+    {
+      "text": "赤焰守卫",
+      "maxWidth": 1000,
+      "measure": {
+        "kind": "perGrapheme",
+        "unit": 10
+      },
+      "result": "赤焰守卫"
+    },
+    {
+      "text": "赤焰守卫",
+      "maxWidth": 45,
+      "measure": {
+        "kind": "perGrapheme",
+        "unit": 10
+      },
+      "result": "赤焰守卫"
+    },
+    {
+      "text": "目标：史蒂夫（35.0%）",
+      "maxWidth": 120,
+      "measure": {
+        "kind": "perGrapheme",
+        "unit": 10
+      },
+      "result": "目标：史蒂夫（35.0…"
+    },
+    {
+      "text": "😀😀😀😀😀",
+      "maxWidth": 45,
+      "measure": {
+        "kind": "perGrapheme",
+        "unit": 10
+      },
+      "result": "😀😀😀…"
+    },
+    {
+      "text": "abcdef",
+      "maxWidth": 5,
+      "measure": {
+        "kind": "perGrapheme",
+        "unit": 10
+      },
+      "result": ""
+    }
+  ],
+  "layout": [
+    {
+      "guiWidth": 320,
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "region": {
+        "x": -384,
+        "y": -36,
+        "width": 768,
+        "height": 72
+      },
+      "rowY": 12,
+      "scale": 0.385416666667,
+      "placement": {
+        "x": 12,
+        "y": 12,
+        "width": 296,
+        "height": 27.75,
+        "scale": 0.385416666667
+      },
+      "boxes": [
+        {
+          "box": {
+            "x": -384,
+            "y": -36,
+            "width": 768,
+            "height": 72
+          },
+          "screen": {
+            "x": 12,
+            "y": 12,
+            "width": 296,
+            "height": 27.75
+          }
+        },
+        {
+          "box": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          },
+          "screen": {
+            "x": 49,
+            "y": 22.791666666667,
+            "width": 245.125,
+            "height": 7.708333333333
+          }
+        }
+      ]
+    },
+    {
+      "guiWidth": 1920,
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "region": {
+        "x": -384,
+        "y": -36,
+        "width": 768,
+        "height": 72
+      },
+      "rowY": 12,
+      "scale": 0.5,
+      "placement": {
+        "x": 768,
+        "y": 12,
+        "width": 384,
+        "height": 36,
+        "scale": 0.5
+      },
+      "boxes": [
+        {
+          "box": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          },
+          "screen": {
+            "x": 778,
+            "y": 14,
+            "width": 30,
+            "height": 30
+          }
+        }
+      ]
+    },
+    {
+      "guiWidth": 20,
+      "layout": {
+        "dock": "top-center",
+        "scale": 0.5,
+        "safeMargin": 12
+      },
+      "region": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 72
+      },
+      "rowY": 12,
+      "scale": 0,
+      "placement": null,
+      "boxes": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "screen": null
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "name": "full",
+      "values": {
+        "health": {
+          "type": "double",
+          "value": 1200000
+        },
+        "maxHealth": {
+          "type": "double",
+          "value": 1200000
+        },
+        "bossName": {
+          "type": "string",
+          "value": "赤焰守卫"
+        },
+        "targetName": {
+          "type": "string",
+          "value": "无"
+        },
+        "enraged": {
+          "type": "bool",
+          "value": false
+        },
+        "shield": {
+          "type": "long",
+          "value": "40"
+        },
+        "maxShield": {
+          "type": "long",
+          "value": "100"
+        }
+      },
+      "issues": [],
+      "commands": [
+        {
+          "kind": "image",
+          "sx": 0,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -288,
+          "dy": -8,
+          "dw": 636,
+          "dh": 20,
+          "opacity": 1,
+          "clip": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 3,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -364,
+          "dy": -32,
+          "dw": 60,
+          "dh": 60,
+          "opacity": 1,
+          "clip": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 1,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": -4,
+          "dw": 628,
+          "dh": 12,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": -4,
+            "width": 628,
+            "height": 12
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 2,
+          "sy": 1,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": 16,
+          "dw": 628,
+          "dh": 4,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": 16,
+            "width": 251.2,
+            "height": 4
+          }
+        },
+        {
+          "kind": "text",
+          "componentId": "title",
+          "box": {
+            "x": -284,
+            "y": -36,
+            "width": 628,
+            "height": 24
+          },
+          "opacity": 1,
+          "text": "赤焰守卫  目标：无",
+          "runs": [
+            {
+              "text": "赤焰守卫",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "  目标：",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "无",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 18,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "kind": "text",
+          "componentId": "health_text",
+          "box": {
+            "x": -284,
+            "y": -9,
+            "width": 628,
+            "height": 22
+          },
+          "opacity": 1,
+          "text": "1.2M（100.0%）",
+          "runs": [
+            {
+              "text": "1.2M",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "（",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "100.0%",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "）",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 14,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        }
+      ]
+    },
+    {
+      "name": "injured",
+      "values": {
+        "health": {
+          "type": "double",
+          "value": 420000
+        },
+        "maxHealth": {
+          "type": "double",
+          "value": 1200000
+        },
+        "bossName": {
+          "type": "string",
+          "value": "赤焰守卫"
+        },
+        "targetName": {
+          "type": "string",
+          "value": "史蒂夫"
+        },
+        "enraged": {
+          "type": "bool",
+          "value": false
+        },
+        "shield": {
+          "type": "long",
+          "value": "12"
+        },
+        "maxShield": {
+          "type": "long",
+          "value": "100"
+        }
+      },
+      "issues": [],
+      "commands": [
+        {
+          "kind": "image",
+          "sx": 0,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -288,
+          "dy": -8,
+          "dw": 636,
+          "dh": 20,
+          "opacity": 1,
+          "clip": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 3,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -364,
+          "dy": -32,
+          "dw": 60,
+          "dh": 60,
+          "opacity": 1,
+          "clip": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 1,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": -4,
+          "dw": 628,
+          "dh": 12,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": -4,
+            "width": 219.8,
+            "height": 12
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 2,
+          "sy": 1,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": 16,
+          "dw": 628,
+          "dh": 4,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": 16,
+            "width": 75.36,
+            "height": 4
+          }
+        },
+        {
+          "kind": "text",
+          "componentId": "title",
+          "box": {
+            "x": -284,
+            "y": -36,
+            "width": 628,
+            "height": 24
+          },
+          "opacity": 1,
+          "text": "赤焰守卫  目标：史蒂夫",
+          "runs": [
+            {
+              "text": "赤焰守卫",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "  目标：",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "史蒂夫",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 18,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "kind": "text",
+          "componentId": "health_text",
+          "box": {
+            "x": -284,
+            "y": -9,
+            "width": 628,
+            "height": 22
+          },
+          "opacity": 1,
+          "text": "420.0K（35.0%）",
+          "runs": [
+            {
+              "text": "420.0K",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "（",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "35.0%",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "）",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 14,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        }
+      ]
+    },
+    {
+      "name": "enraged-long-extreme",
+      "values": {
+        "health": {
+          "type": "double",
+          "value": 300000
+        },
+        "maxHealth": {
+          "type": "double",
+          "value": 1200000
+        },
+        "bossName": {
+          "type": "string",
+          "value": "赤焰守卫"
+        },
+        "targetName": {
+          "type": "string",
+          "value": "史蒂夫"
+        },
+        "enraged": {
+          "type": "bool",
+          "value": true
+        },
+        "shield": {
+          "type": "long",
+          "value": "9223372036854775807"
+        },
+        "maxShield": {
+          "type": "long",
+          "value": "9223372036854775807"
+        }
+      },
+      "issues": [],
+      "commands": [
+        {
+          "kind": "image",
+          "sx": 0,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -288,
+          "dy": -8,
+          "dw": 636,
+          "dh": 20,
+          "opacity": 1,
+          "clip": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 3,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -364,
+          "dy": -32,
+          "dw": 60,
+          "dh": 60,
+          "opacity": 1,
+          "clip": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 1,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": -4,
+          "dw": 628,
+          "dh": 12,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": -4,
+            "width": 157,
+            "height": 12
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 2,
+          "sy": 1,
+          "sw": 1,
+          "sh": 1,
+          "dx": -284,
+          "dy": 16,
+          "dw": 628,
+          "dh": 4,
+          "opacity": 1,
+          "clip": {
+            "x": -284,
+            "y": 16,
+            "width": 628,
+            "height": 4
+          }
+        },
+        {
+          "kind": "text",
+          "componentId": "title",
+          "box": {
+            "x": -284,
+            "y": -36,
+            "width": 628,
+            "height": 24
+          },
+          "opacity": 1,
+          "text": "赤焰守卫  目标：史蒂夫",
+          "runs": [
+            {
+              "text": "赤焰守卫",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "  目标：",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "史蒂夫",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 18,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "kind": "text",
+          "componentId": "health_text",
+          "box": {
+            "x": -284,
+            "y": -9,
+            "width": 628,
+            "height": 22
+          },
+          "opacity": 1,
+          "text": "300.0K（25.0%）",
+          "runs": [
+            {
+              "text": "300.0K",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "（",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "25.0%",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "）",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 14,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "kind": "image",
+          "sx": 0,
+          "sy": 1,
+          "sw": 1,
+          "sh": 1,
+          "dx": -276,
+          "dy": 23,
+          "dw": 608,
+          "dh": 8,
+          "opacity": 1,
+          "clip": {
+            "x": -276,
+            "y": 23,
+            "width": 608,
+            "height": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "values": {
+        "health": {
+          "type": "double",
+          "value": 0
+        },
+        "maxHealth": {
+          "type": "double",
+          "value": 1200000
+        },
+        "bossName": {
+          "type": "string",
+          "value": "赤焰守卫"
+        },
+        "targetName": {
+          "type": "string",
+          "value": "无"
+        },
+        "enraged": {
+          "type": "bool",
+          "value": false
+        },
+        "shield": {
+          "type": "long",
+          "value": "0"
+        },
+        "maxShield": {
+          "type": "long",
+          "value": "100"
+        }
+      },
+      "issues": [],
+      "commands": [
+        {
+          "kind": "image",
+          "sx": 0,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -288,
+          "dy": -8,
+          "dw": 636,
+          "dh": 20,
+          "opacity": 1,
+          "clip": {
+            "x": -288,
+            "y": -8,
+            "width": 636,
+            "height": 20
+          }
+        },
+        {
+          "kind": "image",
+          "sx": 3,
+          "sy": 0,
+          "sw": 1,
+          "sh": 1,
+          "dx": -364,
+          "dy": -32,
+          "dw": 60,
+          "dh": 60,
+          "opacity": 1,
+          "clip": {
+            "x": -364,
+            "y": -32,
+            "width": 60,
+            "height": 60
+          }
+        },
+        {
+          "kind": "text",
+          "componentId": "title",
+          "box": {
+            "x": -284,
+            "y": -36,
+            "width": 628,
+            "height": 24
+          },
+          "opacity": 1,
+          "text": "赤焰守卫  目标：无",
+          "runs": [
+            {
+              "text": "赤焰守卫",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "  目标：",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "无",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 18,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        },
+        {
+          "kind": "text",
+          "componentId": "health_text",
+          "box": {
+            "x": -284,
+            "y": -9,
+            "width": 628,
+            "height": 22
+          },
+          "opacity": 1,
+          "text": "0.0（0.0%）",
+          "runs": [
+            {
+              "text": "0.0",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "（",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "0.0%",
+              "color": "#FFFFFFFF"
+            },
+            {
+              "text": "）",
+              "color": "#FFFFFFFF"
+            }
+          ],
+          "color": "#FFFFFFFF",
+          "fontSize": 14,
+          "align": "center",
+          "verticalAlign": "middle",
+          "shadow": true
+        }
+      ]
+    }
+  ],
+  "colors": [
+    {
+      "input": "#ED242CFF",
+      "argbHex": "#FFED242C",
+      "rgba": {
+        "r": 237,
+        "g": 36,
+        "b": 44,
+        "a": 255
+      }
+    },
+    {
+      "input": "#231016FF",
+      "argbHex": "#FF231016",
+      "rgba": {
+        "r": 35,
+        "g": 16,
+        "b": 22,
+        "a": 255
+      }
+    },
+    {
+      "input": "#00000000",
+      "argbHex": "#00000000",
+      "rgba": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0
+      }
+    },
+    {
+      "input": "#FFFFFFFF",
+      "argbHex": "#FFFFFFFF",
+      "rgba": {
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      }
+    }
+  ],
+  "canonicalFieldOrder": [
+    "format",
+    "version",
+    "id",
+    "texture",
+    "layout",
+    "variables",
+    "components"
+  ],
+  "typecheck": {
+    "sample": "BossbarDocument 的 components 里必须恰好一个 display_region",
+    "componentTypes": [
+      "display_region",
+      "background",
+      "background",
+      "bar",
+      "bar",
+      "text",
+      "text",
+      "background"
+    ]
+  }
+}

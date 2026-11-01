@@ -100,8 +100,8 @@ for (const ext of MANUAL_FILE_EXTENSIONS) {
     `MANUAL_FILE_EXTENSIONS 里的 ${ext} 在注册表里没有条目`,
   )
 }
-// `.py` 恰恰两条：普通脚本与目标定义（磁盘上是两个目录）
-assert.equal(NEW_FILE_TYPES.filter((item) => item.ext === '.py').length, 8)
+// `.py` 按 SCRIPT_TYPES 各一条（磁盘上每种类型一个目录）
+assert.equal(NEW_FILE_TYPES.filter((item) => item.ext === '.py').length, 6)
 assert.equal(type('py').srcKind, 'common', '通用脚本使用 common 类型')
 assert.equal(type('py-goal').srcKind, 'goal')
 assert.notEqual(type('py').icon, type('py-goal').icon, '两种 .py 的图标必须能区分')

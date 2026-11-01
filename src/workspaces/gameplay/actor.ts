@@ -1,5 +1,7 @@
 import { parseJsonValue } from '../../utils/strictJson'
+import { normalizeItemRef, writeKitItem, type KitItem } from './kit'
 import { isObject } from './model'
+import { readComponents, type ItemComponents } from './tnbtJson'
 
 export type ActorDialogueConditionKind = 'always' | 'talk_read' | 'talk_unread'
 export type ActorDialogueCondition =
@@ -17,6 +19,26 @@ export type ActorDisplaySpec =
 export type ActorReputationSpec =
   | { mode: 'leave' | 'clear' }
   | { mode: 'set'; id: string }
+export type ActorLootXpMode = 'leave' | 'dropXp' | 'giveXp' | 'giveLv'
+export type ActorLootXp =
+  | { mode: 'leave' }
+  | { mode: Exclude<ActorLootXpMode, 'leave'>; amount: number }
+export type ActorLootItemRow = {
+  item?: string
+  id: string
+  count: number
+  components: ItemComponents
+  chance: number
+  playerKill: boolean
+}
+export type ActorLootItemSpec = {
+  leave: boolean
+  items: ActorLootItemRow[]
+}
+export type ActorLootSpec = {
+  xp?: ActorLootXp | null
+  item?: ActorLootItemSpec | null
+}
 export type ActorDocument = {
   format: 'rpgtoolkit:actor-template'
   version: 1
@@ -27,12 +49,33 @@ export type ActorDocument = {
   reputation?: ActorReputationSpec | null
   dialogue?: ActorDialogue | null
   interactService?: ActorInteractService | null
+  loot?: ActorLootSpec | null
 }
 
 const REQUIRED_KEYS = ['format', 'version', 'scripts', 'tags', 'freezeAi'] as const
-const OPTIONAL_KEYS = ['dialogue', 'interactService', 'display', 'reputation'] as const
+const OPTIONAL_KEYS = ['dialogue', 'interactService', 'display', 'reputation', 'loot'] as const
 const ALL_KEYS = new Set<string>([...REQUIRED_KEYS, ...OPTIONAL_KEYS])
 const SIDE_EFFECT_MODES = new Set<ActorSideEffectMode>(['leave', 'set', 'clear'])
+const LOOT_XP_MODES = new Set<ActorLootXpMode>(['leave', 'dropXp', 'giveXp', 'giveLv'])
+
+export function actorLootRowToKitItem(row: ActorLootItemRow): KitItem {
+  return { item: row.item, id: row.id, count: row.count, components: row.components }
+}
+
+export function kitItemToActorLootRow(item: KitItem, previous?: ActorLootItemRow): ActorLootItemRow {
+  return {
+    item: item.item,
+    id: item.id,
+    count: item.count,
+    components: item.components,
+    chance: previous?.chance ?? 1,
+    playerKill: previous?.playerKill ?? false,
+  }
+}
+
+export function createActorLootItemRow(): ActorLootItemRow {
+  return { id: '', count: 1, components: {}, chance: 1, playerKill: false }
+}
 
 export const createActor = (): ActorDocument => ({
   format: 'rpgtoolkit:actor-template',
@@ -75,7 +118,35 @@ export function stringifyActor(doc: ActorDocument): string {
       ? { type: 'shop', param: { template: doc.interactService.param.template } }
       : { type: 'vault', param: {} }
   }
+  if (doc.loot != null) out.loot = writeLoot(doc.loot)
   return JSON.stringify(out, null, 2)
+}
+
+function writeLoot(loot: ActorLootSpec): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  if (loot.xp != null) {
+    out.xp = loot.xp.mode === 'leave'
+      ? { mode: 'leave' }
+      : { mode: loot.xp.mode, amount: loot.xp.amount }
+  } else if (loot.xp === null) {
+    out.xp = null
+  }
+  if (loot.item != null) {
+    out.item = {
+      leave: loot.item.leave,
+      items: loot.item.items.map(writeLootItem),
+    }
+  } else if (loot.item === null) {
+    out.item = null
+  }
+  return out
+}
+
+function writeLootItem(row: ActorLootItemRow): Record<string, unknown> {
+  const next = writeKitItem({ item: row.item, id: row.id, count: row.count, components: row.components })
+  if (row.chance !== 1) next.chance = row.chance
+  if (row.playerKill) next.playerKill = true
+  return next
 }
 
 export function parseFlatResourceId(value: string, label: string): string {
@@ -199,6 +270,88 @@ function parseInteractService(value: unknown): ActorInteractService {
   throw new Error(`未知 interactService type：${value.type}`)
 }
 
+function requireNonNegNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error(`${label} 必须是 >= 0 的有限数字`)
+  return value
+}
+
+function parseLootXp(value: unknown): ActorLootXp {
+  if (!isObject(value)) throw new Error('loot.xp 必须是对象或 null')
+  for (const key of Object.keys(value)) if (key !== 'mode' && key !== 'amount') {
+    throw new Error(`未知 loot.xp 字段：${key}`)
+  }
+  if (!('mode' in value) || value.mode == null) throw new Error('loot.xp.mode 必填')
+  if (typeof value.mode !== 'string') throw new Error('loot.xp.mode 必须是 leave|dropXp|giveXp|giveLv')
+  const mode = value.mode.trim() as ActorLootXpMode
+  if (!LOOT_XP_MODES.has(mode)) throw new Error('loot.xp.mode 必须是 leave|dropXp|giveXp|giveLv')
+  if (mode === 'leave') {
+    if ('amount' in value) throw new Error('loot.xp.amount 在 mode=leave 时禁止')
+    return { mode: 'leave' }
+  }
+  if (!('amount' in value) || value.amount == null) throw new Error('loot.xp.amount 在非 leave 时必填')
+  return { mode, amount: requireNonNegNumber(value.amount, 'loot.xp.amount') }
+}
+
+function parseLootItemRow(value: unknown, path: string): ActorLootItemRow {
+  if (!isObject(value)) throw new Error(`${path} 必须是对象`)
+  for (const key of Object.keys(value)) {
+    if (!['item', 'id', 'count', 'components', 'chance', 'playerKill'].includes(key)) {
+      throw new Error(`${path} 未知字段：${key}`)
+    }
+  }
+  const count = value.count == null ? 1 : requireNonNegNumber(value.count, `${path}.count`)
+  if (!Number.isInteger(count)) throw new Error(`${path}.count 必须是整数`)
+  const chance = value.chance == null ? 1 : (() => {
+    if (typeof value.chance !== 'number' || !Number.isFinite(value.chance) || value.chance < 0 || value.chance > 1) {
+      throw new Error(`${path}.chance 必须在 [0,1]`)
+    }
+    return value.chance
+  })()
+  const playerKill = value.playerKill == null ? false : (() => {
+    if (typeof value.playerKill !== 'boolean') throw new Error(`${path}.playerKill 必须是布尔值`)
+    return value.playerKill
+  })()
+  const link = typeof value.item === 'string' ? normalizeItemRef(value.item) : ''
+  if (link) {
+    if ('id' in value || 'components' in value) throw new Error(`${path} 使用 item 链接时不能带 id/components`)
+    return { item: link, id: '', count, components: {}, chance, playerKill }
+  }
+  if (!('id' in value) || typeof value.id !== 'string') throw new Error(`${path} 需要 item 链接或 id`)
+  let components: ItemComponents = {}
+  if (value.components !== undefined) {
+    if (!isObject(value.components)) throw new Error(`${path}.components 必须是对象`)
+    components = readComponents(value.components, `${path}.components`)
+  }
+  return { id: value.id, count, components, chance, playerKill }
+}
+
+function parseLootItem(value: unknown): ActorLootItemSpec {
+  if (!isObject(value)) throw new Error('loot.item 必须是对象或 null')
+  for (const key of Object.keys(value)) if (key !== 'leave' && key !== 'items') {
+    throw new Error(`未知 loot.item 字段：${key}`)
+  }
+  const leave = value.leave == null ? true : (() => {
+    if (typeof value.leave !== 'boolean') throw new Error('loot.item.leave 必须是布尔值')
+    return value.leave
+  })()
+  const items = value.items == null ? [] : (() => {
+    if (!Array.isArray(value.items)) throw new Error('loot.item.items 必须是数组')
+    return value.items.map((entry, index) => parseLootItemRow(entry, `loot.item.items[${index}]`))
+  })()
+  return { leave, items }
+}
+
+function parseLoot(value: unknown): ActorLootSpec {
+  if (!isObject(value)) throw new Error('loot 必须是对象或 null')
+  for (const key of Object.keys(value)) if (key !== 'xp' && key !== 'item') {
+    throw new Error(`未知 loot 字段：${key}`)
+  }
+  const loot: ActorLootSpec = {}
+  if ('xp' in value) loot.xp = value.xp == null ? null : parseLootXp(value.xp)
+  if ('item' in value) loot.item = value.item == null ? null : parseLootItem(value.item)
+  return loot
+}
+
 function parseOptionalObject<T>(raw: Record<string, unknown>, key: string, parse: (value: unknown) => T): T | null | undefined {
   if (!(key in raw)) return undefined
   if (raw[key] == null) return null
@@ -228,5 +381,6 @@ export function parseActor(source: string): ActorDocument {
     reputation: parseOptionalObject(raw, 'reputation', parseReputation),
     dialogue: parseOptionalObject(raw, 'dialogue', parseDialogue),
     interactService: parseOptionalObject(raw, 'interactService', parseInteractService),
+    loot: parseOptionalObject(raw, 'loot', parseLoot),
   }
 }

@@ -2,6 +2,9 @@ import {resourceBaseError} from './resourceNames'
 import {RESOURCE_TYPES,resourceNameKey} from './resourceTypes'
 import type { ExplorerOrganization } from './project/explorerOrganization'
 import {scriptType,type ScriptType} from './scriptResources/types'
+
+const SCRIPT_LOAD_TYPES = new Set(['common', 'player'])
+export const isScriptLoadFileName = (name: string) => name.trim().toLowerCase() === 'load.json'
 import { isTextAssetName } from './i18n/textMap'
 import { defaultHsSeed } from './hanshu/defaultSeed'
 
@@ -68,6 +71,7 @@ export const FILE_PLANE: Record<string, FilePlane> = {
 
 /** 后缀默认平面；未列出则 `shared`（保守：两端都带上） */
 export function defaultPlaneForFile(name: string): FilePlane {
+  if (isScriptLoadFileName(name)) return 'server'
   return FILE_PLANE[getExtension(name)] ?? 'shared'
 }
 
@@ -109,6 +113,11 @@ export function sourceRelativePath(
   name: string,
   srcKind?: string | null,
 ): string {
+  if (isScriptLoadFileName(name)) {
+    const kind = scriptType(srcKind)
+    if (!SCRIPT_LOAD_TYPES.has(kind)) throw new Error('启动列表仅用于 common / player 脚本类型')
+    return `src/script/${kind}/load.json`
+  }
   if (getExtension(name) === '.py') {
     const kind=scriptType(srcKind)
     return `src/script/${kind}/${name}`
@@ -131,7 +140,7 @@ export function sourceKindOf(
   _srcKind?: string | null,
 ): string {
   if (isMetaFile(name)) return 'meta'
-  if (getExtension(name) === '.py') {
+  if (getExtension(name) === '.py' || isScriptLoadFileName(name)) {
     return 'script'
   }
   const dir = fileDir(name)

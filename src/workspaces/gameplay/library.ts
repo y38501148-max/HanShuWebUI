@@ -12,6 +12,35 @@ import {
   questAuthorKindOf,
   type QuestAuthorKind,
 } from './questKind'
+import {
+  createScriptLoad,
+  SCRIPT_LOAD_TYPES,
+  scriptLoadDocumentKey,
+  isScriptLoadDocumentKey,
+  scriptLoadLabel,
+  stringifyScriptLoad,
+  type ScriptLoadType,
+} from './scriptLoad'
+export {
+  SCRIPT_LOAD_TYPES,
+  SCRIPT_LOAD_LABELS,
+  SCRIPT_LOAD_LABEL,
+  scriptLoadLabel,
+  createScriptLoad,
+  parseScriptLoad,
+  stringifyScriptLoad,
+  readScriptLoadSource,
+  scriptLoadCandidateIds,
+  scriptLoadDocumentKey,
+  isScriptLoadDocumentKey,
+  scriptLoadTypeOfKey,
+  scriptLoadTypeOfSource,
+  scriptLoadPath,
+  isScriptLoadFileName,
+  isScriptLoadType,
+  type ScriptLoadType,
+  type ScriptLoadDocument,
+} from './scriptLoad'
 
 export type FlowEntry =
   | { kind: 'package'; package: FlowPackageId }
@@ -70,8 +99,10 @@ export function parseLevelStaticTemplateKey(key: string): string | null {
 }
 export const isLevelStaticKey = (key: string) => key.startsWith('level-static:')
 
-export const isScriptDocument = (document: { package: FlowPackageId; name: string }) =>
-  document.package === 'script' || document.name.toLowerCase().endsWith('.py')
+export const isScriptDocument = (document: { key?: string; package: FlowPackageId; name: string }) => {
+  if (document.key && isScriptLoadDocumentKey(document.key)) return false
+  return document.package === 'script' || document.name.toLowerCase().endsWith('.py')
+}
 export const isKitDocument = (document: { package: FlowPackageId; name: string }) =>
   document.package === 'gift' || document.name.toLowerCase().endsWith('.kit')
 /** 任意任务文档（单进度 / 多进度）。 */
@@ -112,16 +143,17 @@ export const isSectionFolder = (key: string) => key.startsWith('section:')
 /** Virtual builtins are grouped by the same script type as project files. */
 export const builtinScriptFolderKey=(type:ScriptType)=>`builtin:folder:script:${type}`
 export const builtinScriptDocumentKey=(type:ScriptType,name:string)=>`builtin:script:${type}:${name}`
-export const isBuiltinScriptDocumentKey=(key:string)=>key.startsWith('builtin:script:')
+/** 勿与 `builtin:script-load:*` 混淆：后者是启动列表虚入口。 */
+export const isBuiltinScriptDocumentKey=(key:string)=>key.startsWith('builtin:script:') && !isScriptLoadDocumentKey(key)
 export const isBuiltinScriptFolder=(key:string)=>key.startsWith('builtin:folder:script:')
 export function scriptTypeInFolder(state:Pick<FlowWorkspaceState,'folders'>,parent:string|null):ScriptType{
  const visited=new Set<string>()
  while(parent&&!visited.has(parent)){visited.add(parent);const section=parseSectionFolderKey(parent);if(section?.package==='script')return scriptTypeFromSection(section.sectionId);parent=state.folders.find(f=>f.key===parent)?.parentId??null}
  return 'common'
 }
-/** 资源树只读项：内置二级分类、虚拟内置文件夹与脚本、物品库表视图 */
+/** 资源树只读项：内置二级分类、虚拟内置文件夹与脚本、物品库表视图、脚本启动列表入口 */
 export const isReadonlyExplorerKey = (key: string) =>
-  isSectionFolder(key) || isQuestViewKey(key) || isBuiltinScriptFolder(key) || isBuiltinScriptDocumentKey(key) || isLibraryTableKey(key) || isLevelStaticViewKey(key) || isLevelStaticKey(key)
+  isSectionFolder(key) || isQuestViewKey(key) || isBuiltinScriptFolder(key) || isBuiltinScriptDocumentKey(key) || isLibraryTableKey(key) || isScriptLoadDocumentKey(key) || isLevelStaticViewKey(key) || isLevelStaticKey(key)
 
 export function sectionDefs(pkg: FlowPackageId): FlowSectionDef[] {
   return FLOW_PACKAGE_SECTIONS[pkg] ?? []
@@ -280,6 +312,7 @@ export function renameFlowEntry(state: FlowWorkspaceState, entry: FlowEntry, val
   if (entry.kind === 'folder' && isBuiltinScriptFolder(entry.key)) throw new Error('内置文件夹不可重命名。')
   if (entry.kind === 'document' && isBuiltinScriptDocumentKey(entry.key)) throw new Error('内置脚本为只读，不可重命名。')
   if (entry.kind === 'document' && isLibraryTableKey(entry.key)) throw new Error('资源库表视图为只读，不可重命名。')
+  if (entry.kind === 'document' && isScriptLoadDocumentKey(entry.key)) throw new Error('启动列表为固定入口，不可重命名。')
   const item = entry.kind === 'folder' ? state.folders.find((folder) => folder.key === entry.key) : state.documents.find((document) => document.key === entry.key)
   if (!item) throw new Error('资源不存在。')
   const ext = entry.kind === 'document' ? documentExtOf(item as { package: FlowPackageId; name: string }) : false
@@ -298,6 +331,7 @@ export function canMoveFlowEntry(state: FlowWorkspaceState, entry: FlowEntry, pk
   if (entry.kind === 'folder' && isBuiltinScriptFolder(entry.key)) return false
   if (entry.kind === 'document' && isBuiltinScriptDocumentKey(entry.key)) return false
   if (entry.kind === 'document' && isLibraryTableKey(entry.key)) return false
+  if (entry.kind === 'document' && isScriptLoadDocumentKey(entry.key)) return false
   if (parent !== null && isBuiltinScriptFolder(parent)) return false
   if (parent !== null) {
     const folder = state.folders.find((item) => item.key === parent)
@@ -415,4 +449,34 @@ export function withLibraryTables(state: FlowWorkspaceState): FlowWorkspaceState
 }
 export function stripLibraryTables(state: FlowWorkspaceState): FlowWorkspaceState {
   return {...state,documents:state.documents.filter(document=>!isLibraryTableKey(document.key))}
+}
+
+/** 通用／玩家分类下的启动列表虚入口；正文映射到固定 `load.json`。 */
+export function scriptLoadDocument(type: ScriptLoadType, source = stringifyScriptLoad(createScriptLoad())) {
+  return stampDocument({
+    key: scriptLoadDocumentKey(type),
+    name: scriptLoadLabel(type),
+    source,
+    package: 'script',
+    folderId: sectionFolderKey('script', type),
+  }, false)
+}
+
+export function withScriptLoadViews(state: FlowWorkspaceState): FlowWorkspaceState {
+  const byKey = new Map(state.documents.map(doc => [doc.key, doc]))
+  const ensured = SCRIPT_LOAD_TYPES.map(type => {
+    const key = scriptLoadDocumentKey(type)
+    const existing = byKey.get(key)
+    const label = scriptLoadLabel(type)
+    if (!existing) return scriptLoadDocument(type)
+    return existing.name === label ? existing : { ...existing, name: label }
+  })
+  const rest = state.documents.filter(doc => !isScriptLoadDocumentKey(doc.key))
+  const changed = ensured.some((doc, index) => doc !== byKey.get(scriptLoadDocumentKey(SCRIPT_LOAD_TYPES[index]!)))
+    || ensured.length + rest.length !== state.documents.length
+  return changed ? { ...state, documents: [...ensured, ...rest] } : state
+}
+
+export function stripScriptLoadViews(state: FlowWorkspaceState): FlowWorkspaceState {
+  return { ...state, documents: state.documents.filter(document => !isScriptLoadDocumentKey(document.key)) }
 }

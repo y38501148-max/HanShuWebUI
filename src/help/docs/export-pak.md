@@ -18,7 +18,7 @@ PAK 是给引擎用的运行时包。流水线：**编译图 → 接线校验 �
 | 路径 | 职责 |
 | --- | --- |
 | `src/export/compile/` | 类型、注册表、接线、`buildCompileGraph` |
-| `src/export/compile/compilers/` | 内置 Hanshu / Item / Entity / Kit / Quest / Level / Navigation / Identity / LocaleAssets / ActiveSkins |
+| `src/export/compile/compilers/` | 内置 Hanshu / Item / Entity / Kit / Quest / Level / Navigation / ScriptLoad / Identity / LocaleAssets / ActiveSkins |
 | `src/export/pack/exportPaks.ts` | 总入口 `exportPaks` |
 | `src/export/pack/planes.ts` | 平面过滤 |
 | `src/export/pack/encrypt.ts` | AES-256-GCM 整包加密 |
@@ -125,9 +125,9 @@ registerLocaleExportRule({
 
 | kind | 内容 |
 | --- | --- |
-| `actors` | 演员模板（`.actor`）：脚本、标签、freezeAi、显示／对话／服务／声誉；仅 server 平面 |
+| `actors` | 演员模板（`.actor`）：脚本、标签、freezeAi、显示／掉落／对话／服务／声誉；仅 server 平面 |
 | `reputations` | 声誉阵营（`.rep`）：点数阈值、敌对关系与旗帜；仅 server 平面；译文在 `lang_rep` |
-| `script/<类型>` | `common` / `goal` / `kit` / `shop` / `item` / `actor` / `enchantment` / `player` 脚本；内置脚本先入，工程同类型同名文件覆盖 |
+| `script/<类型>` | `common` / `goal` / `kit` / `shop` / `actor` / `player` 脚本；内置脚本先入，工程同类型同名文件覆盖；`common`／`player` 另含有序启动列表 `load.json`（缺失引用为 warning）。启动列表只影响运行时挂载，**不裁剪**未启用脚本——全部 `.py` 仍导出 |
 | `hanshu` / `character` / `quest` / `level` / `navigator` / `gift` / `items` / `entities` | 其它源类型（旧工程 `progress` / `story` 目录仍可读） |
 
 脚本资源、内置覆盖与新建模板的完整约定见[脚本资源](#script-resources)。

@@ -28,6 +28,9 @@ import {
   isBuiltinScriptFolder,
   isFolderEmpty,
   isLibraryTableKey,
+  isScriptLoadDocumentKey,
+  scriptLoadLabel,
+  scriptLoadTypeOfKey,
   isLevelDocument,
   isLevelStaticKey,
   isLevelStaticViewKey,
@@ -140,12 +143,9 @@ export function Icon({
     | "entities"
     | "items"
     | "gift"
-    | "goal-def"
-    | "enchantment";
+    | "goal-def";
 }) {
   const paths: Record<typeof kind, string> = {
-    enchantment:
-      "M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z M19 2v4 M17 4h4",
     folder: "M2 5h6l2 2h12v12H2z",
     document: "M5 2h9l5 5v15H5z M14 2v6h5 M8 12h8 M8 16h8",
     python:
@@ -211,9 +211,7 @@ const sectionIconKind = (key: string): Parameters<typeof Icon>[0]["kind"] => {
         "goal-def": "goal-def",
         kit: "kit",
         shop: "shop",
-        item: "item",
         actor: "actor",
-        enchantment: "enchantment",
         player: "actor",
       } as const
     )[parsed?.sectionId as "common"] ?? "folder"
@@ -819,14 +817,15 @@ export function FlowExplorer({
           return true;
         })
         .sort((a, b) => {
-          const aTable = isLibraryTableKey(a.key),
-            bTable = isLibraryTableKey(b.key);
-          if (aTable !== bTable) return aTable ? -1 : 1;
+          const aPinned = isLibraryTableKey(a.key) || isScriptLoadDocumentKey(a.key),
+            bPinned = isLibraryTableKey(b.key) || isScriptLoadDocumentKey(b.key);
+          if (aPinned !== bPinned) return aPinned ? -1 : 1;
           return a.name.localeCompare(b.name, "zh-CN", { numeric: true });
         });
-      // 物品库表视图固定在同级文件夹之前（此前只在文档组内置顶，仍会被文件夹压到后面）
+      const isPinnedDoc = (key: string) => isLibraryTableKey(key) || isScriptLoadDocumentKey(key);
+      // 表视图／启动列表固定在同级文件夹之前（此前只在文档组内置顶，仍会被文件夹压到后面）
       pushDocs(
-        docsHere.filter((d) => isLibraryTableKey(d.key)),
+        docsHere.filter((d) => isPinnedDoc(d.key)),
         depth,
         parent,
         pkg,
@@ -841,7 +840,7 @@ export function FlowExplorer({
         if (query || expanded.has(id)) visit(pkg, folder.key, depth + 1);
       }
       pushDocs(
-        docsHere.filter((d) => !isLibraryTableKey(d.key)),
+        docsHere.filter((d) => !isPinnedDoc(d.key)),
         depth,
         parent,
         pkg,
@@ -1310,12 +1309,13 @@ export function FlowExplorer({
       (key) =>
         !isBuiltinScriptDocumentKey(key) &&
         !isLibraryTableKey(key) &&
+        !isScriptLoadDocumentKey(key) &&
         !isLevelStaticKey(key),
     );
     if (!removableDocs.length && !removableFolders.length) {
       onNotice(
         documents.some(
-          (key) => isBuiltinScriptDocumentKey(key) || isLibraryTableKey(key),
+          (key) => isBuiltinScriptDocumentKey(key) || isLibraryTableKey(key) || isScriptLoadDocumentKey(key),
         )
           ? "虚拟项为只读，不可删除。"
           : "请先移走文件夹中的资源，或一并选中其中的流程后再删除。",
@@ -1638,6 +1638,7 @@ export function FlowExplorer({
             (key) =>
               !isBuiltinScriptDocumentKey(key) &&
               !isLibraryTableKey(key) &&
+              !isScriptLoadDocumentKey(key) &&
               !isLevelStaticKey(key),
           );
           const canRemove =
@@ -1689,7 +1690,10 @@ export function FlowExplorer({
           const document = state.documents.find((d) => d.key === entry.key);
           const builtin = isBuiltinScriptDocumentKey(entry.key);
           const itemTable = isLibraryTableKey(entry.key);
-          const script = document?.package === "script";
+          const scriptLoad = isScriptLoadDocumentKey(entry.key);
+          const scriptLoadType = scriptLoadTypeOfKey(entry.key);
+          const scriptLoadName = scriptLoadType ? scriptLoadLabel(scriptLoadType) : "启动列表";
+          const script = document?.package === "script" && !scriptLoad;
           const shop = document?.package === "shop";
           const kit = document?.package === "gift";
           const quest = document ? isQuestDocument(document) : false;
@@ -1705,6 +1709,8 @@ export function FlowExplorer({
             ? "打开商店"
             : itemTable
               ? "打开表视图"
+              : scriptLoad
+                ? `打开${scriptLoadName}`
               : entity
                 ? "打开实体"
                 : item
@@ -1726,6 +1732,8 @@ export function FlowExplorer({
                             : "打开流程";
           const downloadLabel = shop
             ? "下载商店"
+            : scriptLoad
+              ? `下载${scriptLoadName}`
             : entity
               ? "下载实体"
               : item
@@ -1748,6 +1756,20 @@ export function FlowExplorer({
                 label: "虚拟表视图",
                 disabled: true,
                 hint: "只读总览，不可重命名、移动或删除",
+                action: () => {},
+              },
+            ];
+          }
+          if (scriptLoad) {
+            return [
+              { label: openLabel, action: () => onSelect(entry.key) },
+              { label: downloadLabel, action: () => onDownload(entry.key) },
+              {
+                label: `固定${scriptLoadName}`,
+                disabled: true,
+                hint: scriptLoadType
+                  ? `映射到 src/script/${scriptLoadType}/load.json，不可重命名、移动或删除`
+                  : "映射到固定 load.json，不可重命名、移动或删除",
                 action: () => {},
               },
             ];
@@ -2160,8 +2182,12 @@ export function FlowExplorer({
           const document = docKey
             ? state.documents.find((d) => d.key === docKey)
             : undefined;
+          const scriptLoadDoc =
+            row.entry.kind === "document" &&
+            isScriptLoadDocumentKey(row.entry.key);
           const pythonDoc =
             !!document &&
+            !scriptLoadDoc &&
             (document.package === "script" ||
               row.name.toLowerCase().endsWith(".py"));
           const shopDoc = document?.package === "shop";
@@ -2205,6 +2231,8 @@ export function FlowExplorer({
                       ? questViewIcon
                       : itemTableDoc
                         ? "item-table"
+                        : scriptLoadDoc
+                          ? "document"
                         : document?.package === "actor" ? "actor" : document?.package === "reputation" ? "reputation" : entityDoc
                           ? "entities"
                           : itemDoc
@@ -2233,7 +2261,7 @@ export function FlowExplorer({
                   if (element) elements.current.set(id, element);
                   else elements.current.delete(id);
                 }}
-                className={`flow-resource-row${isSelected ? " selected" : ""}${row.entry.kind === "document" && row.entry.key === state.activeKey ? " is-open" : ""}${dropTarget === id ? " drop-target" : ""}${builtinFolder || builtinDoc || itemTableDoc || questView || staticRow ? " is-builtin" : ""}`}
+                className={`flow-resource-row${isSelected ? " selected" : ""}${row.entry.kind === "document" && row.entry.key === state.activeKey ? " is-open" : ""}${dropTarget === id ? " drop-target" : ""}${builtinFolder || builtinDoc || itemTableDoc || scriptLoadDoc || questView || staticRow ? " is-builtin" : ""}`}
                 role="treeitem"
                 aria-level={row.depth + 1}
                 aria-selected={isSelected}
@@ -2253,9 +2281,12 @@ export function FlowExplorer({
                   builtinDoc ||
                   builtinFolder ||
                   itemTableDoc ||
+                  scriptLoadDoc ||
                   questView ||
                   staticRow
-                    ? `${row.name}（只读）`
+                    ? scriptLoadDoc
+                      ? `${row.name}（固定入口）`
+                      : `${row.name}（只读）`
                     : row.name
                 }
                 onClick={(event) => {
@@ -2281,15 +2312,19 @@ export function FlowExplorer({
                   !section &&
                   !questView &&
                   !builtinFolder &&
-                  !builtinDoc &&
                   !itemTableDoc &&
+                  !scriptLoadDoc &&
                   !staticRow &&
                   multiCount <= 1
                 }
                 onDragStart={(event) => {
                   dragging.current = row.entry;
+                  // 脚本／内置／物品／礼包都要能 copy 到编辑器落点（启动列表、礼包脚本等）；
+                  // 仅 move 时落点若设 dropEffect=copy，浏览器会禁止投放。
                   event.dataTransfer.effectAllowed =
-                    itemDoc || kitDoc ? "copyMove" : "move";
+                    itemDoc || kitDoc || builtinDoc || pythonDoc
+                      ? "copyMove"
+                      : "move";
                   event.dataTransfer.setData(
                     "application/x-hanshu-progress-entry",
                     id,
